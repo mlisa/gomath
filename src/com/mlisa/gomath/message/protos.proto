@@ -1,0 +1,16 @@
+syntax = "proto3";
+package message;
+
+message Hello {
+    string Address = 1;
+    string Name = 2;
+}
+
+message Welcome{
+    map<string, string> Nodes = 1;
+}
+
+message NewNode {
+    string Address = 1;
+    string Name = 2;
+}
