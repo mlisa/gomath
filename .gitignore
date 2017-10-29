@@ -15,7 +15,7 @@
 .idea
 
 src/*
-!src/com/*
+!src/com/
 
 bin/
 pkg/
