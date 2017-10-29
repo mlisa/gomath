@@ -13,12 +13,11 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 .idea
-src/github.com/*
-src/gogland.org/*
-src/google.goland.org/*
+
+src/*
+!src/com/*
+
 bin/
-go.sh
 pkg/
+
 requirements.txt
-src/golang.org/
-src/google.golang.org/
