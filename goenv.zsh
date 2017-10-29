@@ -12,7 +12,7 @@ if [[ $(command -v go) ]]; then
   mkdir -p ${_GO_PROJECT_DIR}/{src,pkg,bin}
   touch requirements.txt
 
-  TEMP_GOPATH="${GOPATH##*:}"
+  #TEMP_GOPATH="${GOPATH##*:}"
   GOPATH="${_GO_PROJECT_DIR}"
   typeset -U PATH="${GOPATH}/bin:${PATH}"
 
@@ -22,7 +22,7 @@ if [[ $(command -v go) ]]; then
   fi
 
   # Add priority to the workspace directories
-  GOPATH="${_GO_PROJECT_DIR}:${TEMP_GOPATH}"
+  #GOPATH="${_GO_PROJECT_DIR}:${TEMP_GOPATH}"
 
   # set PS1 bash
   PS1="$(basename ${_GO_PROJECT_DIR}):${PS1}"
