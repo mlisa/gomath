@@ -2,10 +2,16 @@ syntax = "proto3";
 package message;
 
 //Message from a new node to every coordinator, to discover if it is avalaible
-message Hello {}
+message Hello {
+    string Address = 1;
+    string Name = 2;
+}
 
 //Response msg from coordinator to Hello msg
-message Available{}
+message Available{
+    string Address = 1;
+    string Name = 2;
+}
 
 //Message sent from new node to his coordinator after receiving Available msg
 message Register {
@@ -27,9 +33,13 @@ message NewNode {
 //Message sent by a node to other nodes (also coordinator if necessary)
 message RequestForCache{
     string Operation = 1;
+    string SenderAddress = 2;
+    string SenderName = 3;
 }
 
 //Response msg for RequestForCache
 message Response{
     string Result = 1;
+    string SenderAddress = 2;
+    string SenderName = 3;
 }

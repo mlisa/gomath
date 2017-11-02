@@ -1,5 +1,5 @@
 package main
-
+/*
 import (
 	"com/mlisa/gomath/message"
 	"github.com/AsynkronIT/goconsole"
@@ -31,7 +31,8 @@ func main() {
 		for msg := range channel {
 			//log.Println(msg)
 		}
-	}()*/
+	}()
 
 	console.ReadLine()
 }
+*/

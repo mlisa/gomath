@@ -1,6 +1,6 @@
 package main
 
-import (
+/*import (
 	//"fmt"
 	"com/mlisa/gomath/message"
 	"github.com/AsynkronIT/goconsole"
@@ -39,3 +39,4 @@ func main() {
 
 	console.ReadLine()
 }
+*/
