@@ -16,7 +16,7 @@ import (
 
 
 
-var myself Common.Node
+var myself Common.PID
 
 var otherNodes map[string]string
 
@@ -48,14 +48,14 @@ func Receive (context actor.Context) {
 		for _, PID := range coordinators {
 			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
 			coordinator := actor.NewPID(PID.Address, PID.Name)
-			coordinator.Tell(&message.Hello{getConfig().Myself.Address, getConfig().Myself.Name})
+			coordinator.Tell(&message.Hello{myself.Address, myself.Name})
 		}
 
 
 	case  *message.Available :
 		log.Println("[PEER] Found a coordinator!")
 		coordinator = actor.NewPID(msg.Address, msg.Name);
-		coordinator.Tell(&message.Register{getConfig().Myself.Address, getConfig().Myself.Name})
+		coordinator.Tell(&message.Register{myself.Address, myself.Name})
 		context.SetBehavior(Connected)
 
 	case *actor.Stopping:
@@ -67,10 +67,12 @@ func Receive (context actor.Context) {
 }
 
 func Connected (context actor.Context){
-	switch context.Message().(type) {
+	switch msg := context.Message().(type) {
 
 	case *message.Welcome :
 		log.Println("[PEER] I'm in!")
+		otherNodes := msg.Nodes
+		log.Println(otherNodes)
 		context.SetBehavior(Operative)
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
@@ -85,7 +87,7 @@ func Operative (context actor.Context){
 	case *message.RequestForCache:
 		result, doesExist := operationsDone[msg.Operation]
 		if doesExist {
-			response := &message.Response{result, myself.Address, myself.Name}
+			response := &message.Response{result, myself.Name, myself.Name}
 			sender := actor.NewPID(msg.SenderAddress, msg.SenderName)
 			sender.Tell(response)
 		}
@@ -98,18 +100,21 @@ func Operative (context actor.Context){
 }
 
 func main() {
+	myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(getConfig().Myself.Address)
+	remote.Start(myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	_, err := actor.SpawnNamed(props, getConfig().Myself.Name)
+	_, err := actor.SpawnNamed(props, myself.Name)
 
 	if err != nil {
 		println("[PEER] Name already in use")
 	}
 
 	console.ReadLine()
+
+
 
 }

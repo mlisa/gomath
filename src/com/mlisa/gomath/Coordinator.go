@@ -11,7 +11,7 @@ import (
 )
 
 var nodes = make(map[string]string)
-var coordinatorData = Common.Node{"Coordinator","127.0.0.1:8081"}
+var coordinatorData = Common.PID{"Coordinator","127.0.0.1:8081"}
 
 func waitingForNodes(context actor.Context){
 	switch msg := context.Message().(type) {
