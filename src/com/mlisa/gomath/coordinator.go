@@ -3,11 +3,12 @@ package main
 import (
 	"com/mlisa/gomath/Common"
 	"com/mlisa/gomath/message"
-	"github.com/AsynkronIT/goconsole"
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/remote"
 	"log"
 	"runtime"
+
+	console "github.com/AsynkronIT/goconsole"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/AsynkronIT/protoactor-go/remote"
 )
 
 var nodes = make(map[string]string)

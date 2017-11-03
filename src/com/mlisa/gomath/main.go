@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/AsynkronIT/goconsole"
+	"runtime"
+
+	console "github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
-	"runtime"
 )
 
 func main() {
