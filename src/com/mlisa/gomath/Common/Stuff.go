@@ -1,19 +1,19 @@
 package Common
 
 import (
-	"path/filepath"
-	"os"
 	"encoding/json"
 	"log"
+	"os"
+	"path/filepath"
 )
 
 type PID struct {
-	Name string
+	Name    string
 	Address string
 }
 
 type Config struct {
-	Myself PID
+	Myself       PID
 	Coordinators []PID
 }
 
@@ -23,6 +23,7 @@ func getConfig() Config {
 	if err != nil {
 		log.Println("[ERROR] " + err.Error())
 	}
+	defer file.Close()
 	decoder := json.NewDecoder(file)
 	configuration := Config{}
 	decoder.Decode(&configuration)
