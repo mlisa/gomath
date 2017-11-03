@@ -1,22 +1,20 @@
 syntax = "proto3";
+import "github.com/AsynkronIT/protoactor-go/actor/protos.proto";
 package message;
 
 //Message from a new node to every coordinator, to discover if it is avalaible
 message Hello {
-    string Address = 1;
-    string Name = 2;
+	actor.PID sender = 1;
 }
 
 //Response msg from coordinator to Hello msg
-message Available{
-    string Address = 1;
-    string Name = 2;
+message Available {
+	actor.PID sender = 1;
 }
 
 //Message sent from new node to his coordinator after receiving Available msg
 message Register {
-    string Address = 1;
-    string Name = 2;
+	actor.PID sender = 1;
 }
 
 //Message to new node from coordinator containing the peer list
@@ -26,20 +24,17 @@ message Welcome{
 
 //Message sent to all peers when a new node enter the region
 message NewNode {
-    string Address = 1;
-    string Name = 2;
+	actor.PID sender = 1;
 }
 
 //Message sent by a node to other nodes (also coordinator if necessary)
-message RequestForCache{
+message RequestForCache {
+	actor.PID sender = 2;
     string Operation = 1;
-    string SenderAddress = 2;
-    string SenderName = 3;
 }
 
 //Response msg for RequestForCache
-message Response{
+message Response {
+	actor.PID sender = 2;
     string Result = 1;
-    string SenderAddress = 2;
-    string SenderName = 3;
 }

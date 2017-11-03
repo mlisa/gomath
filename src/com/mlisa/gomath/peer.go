@@ -1,7 +1,7 @@
 package main
 
 import (
-	"com/mlisa/gomath/Common"
+	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
 	"encoding/json"
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/AsynkronIT/protoactor-go/remote"
 )
 
-var myself Common.PID
+var myself common.PID
 
 var otherNodes map[string]string
 
@@ -23,14 +23,14 @@ var operationsDone map[string]string
 
 var coordinator *actor.PID
 
-func getConfig() Common.Config {
-	absPath, _ := filepath.Abs("com/mlisa/gomath/config.json")
+func getConfig() common.Config {
+	absPath, _ := filepath.Abs("config.json")
 	file, err := os.Open(absPath)
 	if err != nil {
 		log.Println("[ERROR] " + err.Error())
 	}
 	decoder := json.NewDecoder(file)
-	configuration := Common.Config{}
+	configuration := common.Config{}
 	decoder.Decode(&configuration)
 	return configuration
 }
@@ -45,7 +45,7 @@ func Receive(context actor.Context) {
 		for _, PID := range coordinators {
 			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
 			coordinator := actor.NewPID(PID.Address, PID.Name)
-			coordinator.Tell(&message.Hello{myself.Address, myself.Name})
+			coordinator.Tell(&message.Hello{actor.NewPID(myself.Address, myself.Name), myself.Address, myself.Name})
 		}
 
 	case *message.Available:
