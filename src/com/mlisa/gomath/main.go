@@ -5,11 +5,14 @@ import (
 
 	"runtime"
 
+	"fmt"
 	console "github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
 )
+
+var controller Controller
 
 func main() {
 	myself = getConfig().Myself
@@ -19,7 +22,7 @@ func main() {
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	_, err := actor.SpawnNamed(props, myself.Name)
+	peer, err := actor.SpawnNamed(props, myself.Name)
 
 	if err != nil {
 		println("[PEER] Name already in use")
@@ -41,6 +44,9 @@ func main() {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+
+	controller := Controller{g, peer}
+
 }
 
 func layout(g *gocui.Gui) error {
@@ -78,9 +84,15 @@ func initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		//vdst, _ := g.View("log")
 		//fmt.Fprint(vdst, v.Buffer())
+		controller.computeResult(v.Buffer())
 		return nil
 	}); err != nil {
 		return err
 	}
 	return nil
+}
+
+func setResult(g *gocui.Gui, result string) {
+	vdst, _ := g.View("log")
+	fmt.Fprint(vdst, result)
 }
