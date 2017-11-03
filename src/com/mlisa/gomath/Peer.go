@@ -1,20 +1,18 @@
 package main
 
 import (
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"fmt"
-	"com/mlisa/gomath/message"
-	"log"
-	"runtime"
-	"github.com/AsynkronIT/protoactor-go/remote"
-	"os"
-	"encoding/json"
-	"github.com/AsynkronIT/goconsole"
-	"path/filepath"
 	"com/mlisa/gomath/Common"
+	"com/mlisa/gomath/message"
+	"encoding/json"
+	"fmt"
+	"github.com/AsynkronIT/goconsole"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/AsynkronIT/protoactor-go/remote"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 )
-
-
 
 var myself Common.PID
 
@@ -23,7 +21,6 @@ var otherNodes map[string]string
 var operationsDone map[string]string
 
 var coordinator *actor.PID
-
 
 func getConfig() Common.Config {
 	absPath, _ := filepath.Abs("com/mlisa/gomath/config.json")
@@ -37,10 +34,9 @@ func getConfig() Common.Config {
 	return configuration
 }
 
+func Receive(context actor.Context) {
 
-func Receive (context actor.Context) {
-
-	switch msg :=context.Message().(type) {
+	switch msg := context.Message().(type) {
 	case *actor.Started:
 		fmt.Println("[PEER] Started, initialize actor here")
 
@@ -51,10 +47,9 @@ func Receive (context actor.Context) {
 			coordinator.Tell(&message.Hello{myself.Address, myself.Name})
 		}
 
-
-	case  *message.Available :
+	case *message.Available:
 		log.Println("[PEER] Found a coordinator!")
-		coordinator = actor.NewPID(msg.Address, msg.Name);
+		coordinator = actor.NewPID(msg.Address, msg.Name)
 		coordinator.Tell(&message.Register{myself.Address, myself.Name})
 		context.SetBehavior(Connected)
 
@@ -66,10 +61,10 @@ func Receive (context actor.Context) {
 
 }
 
-func Connected (context actor.Context){
+func Connected(context actor.Context) {
 	switch msg := context.Message().(type) {
 
-	case *message.Welcome :
+	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		otherNodes := msg.Nodes
 		log.Println(otherNodes)
@@ -81,7 +76,7 @@ func Connected (context actor.Context){
 	}
 }
 
-func Operative (context actor.Context){
+func Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
 
 	case *message.RequestForCache:
@@ -114,7 +109,5 @@ func main() {
 	}
 
 	console.ReadLine()
-
-
 
 }

@@ -1,29 +1,86 @@
 package main
-/*
-import (
-	"runtime"
-	"github.com/AsynkronIT/protoactor-go/remote"
-	"github.com/AsynkronIT/protoactor-go/actor"
 
+import (
+	"fmt"
+	"log"
+
+	"github.com/AsynkronIT/goconsole"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/AsynkronIT/protoactor-go/remote"
+	"github.com/jroimartin/gocui"
+	"runtime"
 )
 
-
 func main() {
+	myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start("127.0.0.1:8080")
+	remote.Start(myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	pid, err := actor.SpawnNamed(props, "Peer")
+	_, err := actor.SpawnNamed(props, myself.Name)
 
-	if(err != nil){
-		println("Name already in use")
+	if err != nil {
+		println("[PEER] Name already in use")
 	}
 
-	controller := Controller{Peer: pid}
+	console.ReadLine()
 
-	controller.Start()
+	g, _ := gocui.NewGui(gocui.Output256)
+	defer g.Close()
 
+	g.SetManagerFunc(layout)
+	g.Cursor = true
+	g.Mouse = false
+
+	if err := initKeybindings(g); err != nil {
+		log.Panicln(err)
+	}
+
+	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+		log.Panicln(err)
+	}
 }
-*/
+
+func layout(g *gocui.Gui) error {
+	maxX, maxY := g.Size()
+	if v, err := g.SetView("input", 0, 0, maxX/2, maxY/3*2); err != nil {
+		v.Title = "Input"
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Editable = true
+		v.Wrap = true
+		v.FgColor = gocui.ColorYellow | gocui.AttrBold
+		v.BgColor = gocui.ColorCyan
+		g.SetCurrentView("input")
+	}
+	if v, err := g.SetView("log", 0, maxY/3*2, maxX/2, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Wrap = true
+		v.Title = "Log"
+	}
+	return nil
+}
+
+func quit(g *gocui.Gui, v *gocui.View) error {
+	return gocui.ErrQuit
+}
+
+func initKeybindings(g *gocui.Gui) error {
+	// quit
+	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		//vdst, _ := g.View("log")
+		//fmt.Fprint(vdst, v.Buffer())
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
