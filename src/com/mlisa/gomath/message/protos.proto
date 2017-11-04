@@ -19,7 +19,7 @@ message Register {
 
 //Message to new node from coordinator containing the peer list
 message Welcome{
-    map<string, string> Nodes = 1;
+	repeated actor.PID Nodes = 1;
 }
 
 //Message sent to all peers when a new node enter the region

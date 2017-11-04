@@ -15,14 +15,14 @@ import (
 var controller Controller
 
 func main() {
-	myself = getConfig().Myself
+	//myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(myself.Address)
+	remote.Start(getConfig().Myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	peer, err := actor.SpawnNamed(props, myself.Name)
+	peer, err := actor.SpawnNamed(props, getConfig().Myself.Name)
 
 	if err != nil {
 		println("[PEER] Name already in use")
@@ -46,6 +46,7 @@ func main() {
 	}
 
 	controller := Controller{g, peer}
+	log.Println(controller.peer.Id)
 
 }
 

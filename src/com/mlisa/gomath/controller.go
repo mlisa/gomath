@@ -13,4 +13,5 @@ type Controller struct {
 func (controller *Controller) computeResult(operation string) {
 
 	//Policy per decidere se calcolarla qui o meno
+
 }

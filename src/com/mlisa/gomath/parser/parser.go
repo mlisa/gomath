@@ -6,7 +6,7 @@
 // Inspired by pegjs arithmetic example:
 // https://github.com/pegjs/pegjs/blob/master/examples/arithmetics.pegjs
 //
-package main
+package parser
 
 import (
 	"bytes"

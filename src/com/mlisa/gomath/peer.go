@@ -8,20 +8,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 
-	console "github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/remote"
 )
 
-var myself common.PID
+var myself *actor.PID
 
-var otherNodes map[string]string
+var otherNodes = make([]*actor.PID, 0)
 
 var operationsDone map[string]string
 
-var coordinator *actor.PID
+var coord *actor.PID
 
 func getConfig() common.Config {
 	absPath, _ := filepath.Abs("config.json")
@@ -39,19 +36,20 @@ func Receive(context actor.Context) {
 
 	switch msg := context.Message().(type) {
 	case *actor.Started:
-		fmt.Println("[PEER] Started, initialize actor here")
+		myself = actor.NewPID(getConfig().Myself.Address, getConfig().Myself.Name)
+		fmt.Println("[PEER] Started, initialize actor here, I'm " + myself.Id + " " + myself.Address)
 
 		coordinators := getConfig().Coordinators //lettura da file config
 		for _, PID := range coordinators {
 			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
 			coordinator := actor.NewPID(PID.Address, PID.Name)
-			coordinator.Tell(&message.Hello{actor.NewPID(myself.Address, myself.Name), myself.Address, myself.Name})
+			coordinator.Tell(&message.Hello{myself})
 		}
 
 	case *message.Available:
-		log.Println("[PEER] Found a coordinator!")
-		coordinator = actor.NewPID(msg.Address, msg.Name)
-		coordinator.Tell(&message.Register{myself.Address, myself.Name})
+		log.Println("[PEER] Found a coordinator! " + myself.Id + " " + myself.Address)
+		coord = msg.Sender
+		coord.Tell(&message.Register{myself})
 		context.SetBehavior(Connected)
 
 	case *actor.Stopping:
@@ -83,9 +81,8 @@ func Operative(context actor.Context) {
 	case *message.RequestForCache:
 		result, doesExist := operationsDone[msg.Operation]
 		if doesExist {
-			response := &message.Response{result, myself.Name, myself.Name}
-			sender := actor.NewPID(msg.SenderAddress, msg.SenderName)
-			sender.Tell(response)
+			response := &message.Response{myself, result}
+			msg.Sender.Tell(response)
 		}
 
 	case *actor.Stopping:
@@ -95,16 +92,17 @@ func Operative(context actor.Context) {
 	}
 }
 
+/*
 func main() {
-	myself = getConfig().Myself
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	remote.Start(myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	_, err := actor.SpawnNamed(props, myself.Name)
-
+	myself, err := actor.SpawnNamed(props, getConfig().Myself.Name)
+	log.Println(myself.Id)
 	if err != nil {
 		println("[PEER] Name already in use")
 	}
@@ -112,3 +110,4 @@ func main() {
 	console.ReadLine()
 
 }
+*/

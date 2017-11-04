@@ -1,7 +1,6 @@
 package main
 
 import (
-	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
 	"log"
 	"runtime"
@@ -12,27 +11,27 @@ import (
 )
 
 type coordinatorInfo struct {
-	PID     actor.PID
+	PID     *actor.PID
 	Name    string
 	Address string
 }
 
 // Max 50 nodes per region
 var maxNodes = 50
-var nodes = make([]common.PID, 0, maxNodes)
+var nodes = make([]*actor.PID, 0, maxNodes)
 var coordinator coordinatorInfo
 
 func waitingForNodes(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *message.Hello:
-		//log.Println("[COORDINATOR] message \"Hello\" from " + msg.Name + " " + msg.Address)
+		log.Println("[COORDINATOR] message \"Hello\" from " + msg.Sender.Id + " " + msg.Sender.Address)
 		/// check availability
-		msg.Sender.Tell(coordinator.PID)
+		msg.Sender.Tell(&message.Available{coordinator.PID})
 	case *message.Register:
-		//log.Println("[COORDINATOR] Sending {{region}} nodes to " + msg.Name + " " + msg.Address)
+		log.Println("[COORDINATOR] Sending region nodes to " + msg.Sender.Id + " " + msg.Sender.Address)
 
 		//sender := actor.NewPID(msg.Address, msg.Name)
-		//sender.Tell(&message.Welcome{nodes})
+		msg.Sender.Tell(&message.Welcome{nodes})
 		//message := &message.NewNode{msg.Address, msg.Name}
 
 		for range nodes {
@@ -54,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	coordinator = coordinatorInfo{*pid, name, address}
+	coordinator = coordinatorInfo{pid, name, address}
 
 	console.ReadLine()
 }
