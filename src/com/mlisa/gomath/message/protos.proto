@@ -38,3 +38,7 @@ message Response {
 	actor.PID sender = 2;
     string Result = 1;
 }
+
+message AskForResult {
+	string Operation = 1;
+}

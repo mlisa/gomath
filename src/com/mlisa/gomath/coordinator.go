@@ -26,7 +26,7 @@ func waitingForNodes(context actor.Context) {
 	case *message.Hello:
 		log.Println("[COORDINATOR] message \"Hello\" from " + msg.Sender.Id + " " + msg.Sender.Address)
 		/// check availability
-		msg.Sender.Tell(&message.Available{coordinator.PID})
+		context.Sender().Request(&message.Available{coordinator.PID}, context.Self())
 	case *message.Register:
 		log.Println("[COORDINATOR] Sending region nodes to " + msg.Sender.Id + " " + msg.Sender.Address)
 
