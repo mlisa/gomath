@@ -17,7 +17,7 @@ type Config struct {
 	Coordinators []PID
 }
 
-func getConfig() Config {
+func GetConfig() Config {
 	absPath, _ := filepath.Abs("com/mlisa/gomath/config.json")
 	file, err := os.Open(absPath)
 	if err != nil {

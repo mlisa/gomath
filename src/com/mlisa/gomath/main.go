@@ -5,6 +5,7 @@ import (
 
 	"runtime"
 
+	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
 	"github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -15,12 +16,12 @@ import (
 func main() {
 	//myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(getConfig().Myself.Address)
+	remote.Start(common.GetConfig().Myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromFunc(Receive)
 
-	peer, err := actor.SpawnNamed(props, getConfig().Myself.Name)
+	peer, err := actor.SpawnNamed(props, common.GetConfig().Myself.Name)
 
 	if err != nil {
 		println("[PEER] Name already in use")
@@ -29,7 +30,10 @@ func main() {
 
 	g, _ := gocui.NewGui(gocui.Output256)
 	defer g.Close()
-	controller := actor.Spawn(actor.FromInstance(&Controller{gui: g, peer: peer}))
+
+	cache := CacheManager{}
+
+	controller := actor.Spawn(actor.FromInstance(&Controller{gui: g, peer: peer, cache: &cache}))
 
 	g.SetManagerFunc(layout)
 	g.Cursor = true

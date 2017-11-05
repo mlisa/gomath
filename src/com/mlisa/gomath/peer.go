@@ -3,32 +3,17 @@ package main
 import (
 	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
 var otherNodes = make([]*actor.PID, 0)
 
-var operationsDone map[string]string
-
 var coord *actor.PID
 
-func getConfig() common.Config {
-	absPath, _ := filepath.Abs("config.json")
-	file, err := os.Open(absPath)
-	if err != nil {
-		log.Println("[ERROR] " + err.Error())
-	}
-	decoder := json.NewDecoder(file)
-	configuration := common.Config{}
-	decoder.Decode(&configuration)
-	return configuration
-}
+var controller *actor.PID
 
 func Receive(context actor.Context) {
 
@@ -36,13 +21,14 @@ func Receive(context actor.Context) {
 	case *actor.Started:
 		fmt.Println("[PEER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
 
-		coordinators := getConfig().Coordinators //lettura da file config
+		coordinators := common.GetConfig().Coordinators //lettura da file config
 		for _, PID := range coordinators {
 			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
 			coordinator := actor.NewPID(PID.Address, PID.Name)
 			coordinator.Request(&message.Hello{context.Self()}, context.Self())
 		}
-
+	case *message.Hello:
+		controller := context.Sender()
 	case *message.Available:
 		log.Println("[PEER] Found a coordinator!")
 		coord = context.Sender()
@@ -76,12 +62,10 @@ func Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
 
 	case *message.RequestForCache:
-		result, doesExist := operationsDone[msg.Operation]
-		if doesExist {
-			response := &message.Response{context.Self(), result}
-			msg.Sender.Tell(response)
-		}
+		controller.Request(&message.SearchInCache{msg.Operation, context.Sender()}, context.Self())
 
+	case *message.ResponseFromCache:
+		msg.SendTo.Tell(message.Response{Result: msg.Result})
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
