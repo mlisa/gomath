@@ -1,7 +1,7 @@
 {
   "Myself" : {
     "name" : "peer",
-    "address" : "127.0.0.1:8083"
+    "address" : "127.0.0.1:8084"
   },
   "coordinators" :
       [

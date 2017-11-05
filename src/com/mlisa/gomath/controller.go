@@ -25,9 +25,14 @@ func (controller *Controller) Receive(context actor.Context) {
 
 	case *message.AskForResult:
 		//Policy per decidere se calcolarlo qui o meno
-		var something = false
+		var something = true
 		if something {
 			controller.peer.Request(msg, context.Self())
+			controller.gui.Update(func(g *gocui.Gui) error {
+				output, _ := g.View("Log")
+				fmt.Fprint(output, "Sent AskForResult message to peer")
+				return nil
+			})
 		} else {
 			result, err := parser.ParseReader("", bytes.NewBufferString(msg.Operation))
 			if err == nil {
@@ -46,9 +51,19 @@ func (controller *Controller) Receive(context actor.Context) {
 			fmt.Fprint(output, msg.Result)
 			return nil
 		})
+		controller.gui.Update(func(g *gocui.Gui) error {
+			output, _ := g.View("Log")
+			fmt.Fprint(output, "Receive Response message from peer")
+			return nil
+		})
 
 	case *message.SearchInCache:
 		result, found := controller.cache.retrieveResult(msg.Operation)
+		controller.gui.Update(func(g *gocui.Gui) error {
+			output, _ := g.View("Log")
+			fmt.Fprint(output, "Receive SearchInCache message from peer")
+			return nil
+		})
 
 		if found {
 			context.Sender().Tell(message.ResponseFromCache{result, msg.FromPeer})

@@ -31,14 +31,14 @@ func waitingForNodes(context actor.Context) {
 		log.Println("[COORDINATOR] Sending region nodes to " + msg.Sender.Id + " " + msg.Sender.Address)
 
 		//sender := actor.NewPID(msg.Address, msg.Name)
-		msg.Sender.Tell(&message.Welcome{nodes})
+		msg.Sender.Request(&message.Welcome{nodes}, context.Self())
 		//message := &message.NewNode{msg.Address, msg.Name}
 
 		for range nodes {
 			//	sender = actor.NewPID(v, k)
 			//sender.Tell(message)
 		}
-		//nodes[msg.Name] = msg.Address
+		nodes = append(nodes, context.Sender())
 
 	}
 }

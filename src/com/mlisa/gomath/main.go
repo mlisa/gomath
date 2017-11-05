@@ -11,6 +11,8 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
+	"io"
+	"os"
 )
 
 func main() {
@@ -19,7 +21,7 @@ func main() {
 	remote.Start(common.GetConfig().Myself.Address)
 
 	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromFunc(Receive)
+	props := actor.FromInstance(&Peer{})
 
 	peer, err := actor.SpawnNamed(props, common.GetConfig().Myself.Name)
 
@@ -27,9 +29,16 @@ func main() {
 		println("[PEER] Name already in use")
 	}
 	console.ReadLine()
+	logFile, err := os.OpenFile("log.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(logFile)
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
 
 	g, _ := gocui.NewGui(gocui.Output256)
-	defer g.Close()
+	//defer g.Close()
 
 	cache := CacheManager{}
 
@@ -51,23 +60,30 @@ func main() {
 
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("input", 0, 0, maxX/2, maxY/3*2); err != nil {
+	if v, err := g.SetView("input", 0, 0, maxX/2, maxY/3); err != nil {
 		v.Title = "Input"
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Editable = true
 		v.Wrap = true
-		v.FgColor = gocui.ColorYellow | gocui.AttrBold
-		v.BgColor = gocui.ColorCyan
+		v.FgColor = gocui.AttrBold
 		g.SetCurrentView("input")
 	}
-	if v, err := g.SetView("Output", 0, maxY/3*2, maxX/2, maxY-1); err != nil {
+	if v, err := g.SetView("Output", 0, maxY/3, maxX/2, maxY/3*2); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Wrap = true
 		v.Title = "Output"
+	}
+
+	if v, err := g.SetView("Log", 0, maxY/3*2, maxX/2, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Wrap = true
+		v.Title = "Log"
 	}
 	return nil
 }

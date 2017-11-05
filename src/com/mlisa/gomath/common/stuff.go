@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func GetConfig() Config {
-	absPath, _ := filepath.Abs("com/mlisa/gomath/config.json")
+	absPath, _ := filepath.Abs("config.json")
 	file, err := os.Open(absPath)
 	if err != nil {
 		log.Println("[ERROR] " + err.Error())
