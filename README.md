@@ -80,7 +80,7 @@ https://github.com/jroimartin/gocui
 
 ### Installation
 
-go get github.com/jroimartin/gocui
+`go get github.com/jroimartin/gocui`
 
 ## go-cache
 
