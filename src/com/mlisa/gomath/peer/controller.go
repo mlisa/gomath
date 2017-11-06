@@ -19,11 +19,12 @@ type Controller struct {
 }
 
 func (controller *Controller) AskForResult(operation string) {
-	var something = false
+	var something = true
 	if something {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Gui.Update(func(g *gocui.Gui) error {
 			output, _ := g.View("Log")
+			output.Clear()
 			fmt.Fprint(output, "Sent AskForResult message to peer")
 			return nil
 		})
@@ -32,6 +33,7 @@ func (controller *Controller) AskForResult(operation string) {
 		if err == nil {
 			controller.Gui.Update(func(g *gocui.Gui) error {
 				output, _ := g.View("Output")
+				output.Clear()
 				fmt.Fprint(output, result)
 				return nil
 			})
@@ -48,8 +50,7 @@ func (controller *Controller) SearchInCache(operation string) string {
 		return nil
 	})
 
-	result, found := controller.Cache.retrieveResult(operation)
-	if found {
+	if result, err := controller.Cache.retrieveResult(operation); err == nil {
 		log.Println("Retrieved result " + result + " from cache")
 		return result
 	}
