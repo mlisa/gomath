@@ -51,12 +51,12 @@ go get github.com/gogo/protobuf/gogoproto
 
 `protoc -I=. -I=$GOPATH/src --gogoslick_out=. *.proto`
 
-## BoltDB
+## go-cache
 
 ### Link
 
-https://github.com/boltdb/bolt
+https://github.com/patrickmn/go-cache
 
 ### Installation
 
-`go get github.com/boltdb/bolt/...`
+`go get github.com/patrickmn/go-cache`
