@@ -33,16 +33,18 @@ message Response {
     string Result = 1;
 }
 
+//Msg from controller to peer
 message AskForResult {
 	string Operation = 1;
 }
 
+//Msg from peer to controller
 message SearchInCache {
 	string Operation = 1;
 	actor.PID FromPeer = 2;
 }
 
+//Response msg from a peer to another peer
 message ResponseFromCache {
 	string Result = 1;
-	actor.PID SendTo = 2;
 }

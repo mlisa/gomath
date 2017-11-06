@@ -10,11 +10,9 @@ import (
 )
 
 type Peer struct {
-	otherNodes            []*actor.PID
-	coordinator           *actor.PID
-	controller            *actor.PID
-	receivedNodes         bool
-	connectedToController bool
+	otherNodes  []*actor.PID
+	coordinator *actor.PID
+	Controller  *Controller
 }
 
 func (peer *Peer) Receive(context actor.Context) {
@@ -28,13 +26,10 @@ func (peer *Peer) Receive(context actor.Context) {
 			coord := actor.NewPID(PID.Address, PID.Id)
 			coord.Request(&message.Hello{}, context.Self())
 		}
-	case *message.Hello:
-		peer.connectedToController = true
-		peer.controller = context.Sender()
-		log.Println(peer.controller.Id)
 	case *message.Available:
 		log.Println("[PEER] Found a coordinator!")
 		peer.coordinator = context.Sender()
+		//TODO: requestfuture se no poi si pianta
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 
@@ -51,17 +46,7 @@ func (peer *Peer) Connected(context actor.Context) {
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
-		peer.receivedNodes = true
-		if peer.connectedToController && peer.receivedNodes {
-			context.SetBehavior(peer.Operative)
-		}
-	case *message.Hello:
-		peer.controller = context.Sender()
-		log.Println(peer.controller.Id)
-		peer.connectedToController = true
-		if peer.connectedToController && peer.receivedNodes {
-			context.SetBehavior(peer.Operative)
-		}
+		context.SetBehavior(peer.Operative)
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
@@ -80,15 +65,13 @@ func (peer *Peer) Operative(context actor.Context) {
 		}
 	case *message.RequestForCache:
 		log.Println("[PEER] Received RequestForCache")
-		log.Println(peer.controller)
-		peer.controller.Request(&message.SearchInCache{msg.Operation, context.Sender()}, context.Self())
-	case *message.ResponseFromCache:
-		log.Println("[PEER] Sending ResponseFromCache")
-		msg.SendTo.Request(&message.Response{Result: msg.Result}, context.Self())
-
+		res := peer.Controller.SearchInCache(msg.Operation)
+		if res != "" {
+			context.Sender().Request(&message.Response{Result: res}, context.Self())
+		}
 	case *message.Response:
 		log.Println("[PEER] Received Response from peer!")
-		peer.controller.Tell(msg)
+		peer.Controller.SetResult(msg.Result)
 	case *actor.Stopping:
 		log.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:

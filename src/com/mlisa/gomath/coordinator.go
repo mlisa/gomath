@@ -20,7 +20,6 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.Hello:
 		log.Println("[COORDINATOR] message \"Hello\" from peer " + context.Sender().Id)
 		if len(coordinator.Peers) < coordinator.MaxPeers {
-			coordinator.Peers = append(coordinator.Peers, context.Sender())
 			context.Sender().Request(&message.Available{}, context.Self())
 		} else {
 			context.Sender().Request(&message.NotAvailable{}, context.Self())
@@ -28,6 +27,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.Register:
 		log.Println("[COORDINATOR] Sending {{region}} nodes to " + context.Sender().Id + " " + context.Sender().Address)
 		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
+		coordinator.Peers = append(coordinator.Peers, context.Sender())
 		// update all others peers newnode
 		for _, PID := range coordinator.Peers {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.NewNode{context.Sender()}, context.Self())

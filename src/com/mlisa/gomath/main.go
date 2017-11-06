@@ -6,8 +6,6 @@ import (
 	"runtime"
 
 	"com/mlisa/gomath/common"
-	"com/mlisa/gomath/message"
-	"github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
@@ -27,8 +25,12 @@ func main() {
 	mw := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(mw)
 
+	g, _ := gocui.NewGui(gocui.Output256)
+	defer g.Close()
+
+	controller := Controller{gui: g, cache: &CacheManager{}}
 	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromInstance(&Peer{})
+	props := actor.FromInstance(&Peer{Controller: &controller})
 
 	peer, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
 
@@ -36,20 +38,13 @@ func main() {
 		println("[PEER] Name already in use")
 	}
 
-	console.ReadLine()
-
-	g, _ := gocui.NewGui(gocui.Output256)
-	defer g.Close()
-
-	cache := CacheManager{}
-
-	controller := actor.Spawn(actor.FromInstance(&Controller{gui: g, peer: peer, cache: &cache}))
+	controller.Peer = peer
 
 	g.SetManagerFunc(layout)
 	g.Cursor = true
 	g.Mouse = false
 
-	if err := initKeybindings(g, controller); err != nil {
+	if err := initKeybindings(g, &controller); err != nil {
 		log.Panicln(err)
 	}
 
@@ -93,7 +88,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func initKeybindings(g *gocui.Gui, controller *actor.PID) error {
+func initKeybindings(g *gocui.Gui, controller *Controller) error {
 	// quit
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
@@ -101,7 +96,7 @@ func initKeybindings(g *gocui.Gui, controller *actor.PID) error {
 	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		//vdst, _ := g.View("log")
 		//fmt.Fprint(vdst, controller)
-		controller.Tell(&message.AskForResult{v.Buffer()})
+		controller.AskForResult(v.Buffer())
 		return nil
 	}); err != nil {
 		return err
