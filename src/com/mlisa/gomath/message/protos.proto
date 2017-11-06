@@ -32,3 +32,17 @@ message RequestForCache {
 message Response {
     string Result = 1;
 }
+
+message AskForResult {
+	string Operation = 1;
+}
+
+message SearchInCache {
+	string Operation = 1;
+	actor.PID FromPeer = 2;
+}
+
+message ResponseFromCache {
+	string Result = 1;
+	actor.PID SendTo = 2;
+}
