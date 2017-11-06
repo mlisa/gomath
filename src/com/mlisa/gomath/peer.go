@@ -10,19 +10,14 @@ import (
 )
 
 type Peer struct {
-	otherNodes []*actor.PID
-
-	coordinator *actor.PID
-
-	controller *actor.PID
-
-	receivedNodes bool
-
+	otherNodes            []*actor.PID
+	coordinator           *actor.PID
+	controller            *actor.PID
+	receivedNodes         bool
 	connectedToController bool
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-
 	switch context.Message().(type) {
 	case *actor.Started:
 		fmt.Println("[PEER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
@@ -53,7 +48,6 @@ func (peer *Peer) Receive(context actor.Context) {
 
 func (peer *Peer) Connected(context actor.Context) {
 	switch msg := context.Message().(type) {
-
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
@@ -77,7 +71,6 @@ func (peer *Peer) Connected(context actor.Context) {
 
 func (peer *Peer) Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
-
 	case *message.AskForResult:
 		log.Println("[PEER] Sending RequestForCache")
 		log.Println(peer.otherNodes)

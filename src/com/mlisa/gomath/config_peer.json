@@ -1,22 +1,12 @@
 {
-<<<<<<< HEAD:src/com/mlisa/gomath/config_peer.json
   "myself" : {
     "id" : "peer",
     "address" : "127.0.0.1:8082"
-=======
-  "Myself" : {
-    "name" : "peer",
-    "address" : "127.0.0.1:8084"
->>>>>>> lisa:src/com/mlisa/gomath/config.json
   },
   "coordinators" :
       [
         {
-<<<<<<< HEAD:src/com/mlisa/gomath/config_peer.json
           "id" : "coordinator",
-=======
-          "name" : "coordinator",
->>>>>>> lisa:src/com/mlisa/gomath/config.json
           "address" : "127.0.0.1:8081"
         }
       ]
