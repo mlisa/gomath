@@ -1,55 +1,32 @@
 package peer
 
 import (
-	"fmt"
-	"log"
+	"errors"
 
-	"github.com/boltdb/bolt"
+	gocache "github.com/patrickmn/go-cache"
 )
 
 type CacheManager struct {
-	db *bolt.DB
+	c *gocache.Cache
 }
 
-func (cache *CacheManager) addNewOperation(operation string, result string) {
-	var err error
-	cache.db, err = bolt.Open("peer/cacheDB", 0600, nil)
-	if err != nil {
-		log.Fatal("[ERROR]")
+func (cache *CacheManager) addNewOperation(operation string, result string) error {
+	if cache.c == nil {
+		cache.c = gocache.New(gocache.NoExpiration, gocache.DefaultExpiration)
 	}
-	defer cache.db.Close()
-
-	cache.db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("OperationBucket"))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
-		b.Put([]byte(operation), []byte(result))
-		return nil
-	})
+	if err := cache.c.Add(operation, result, gocache.NoExpiration); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (cache *CacheManager) retrieveResult(operation string) (string, bool) {
-	var err error
-	var result []byte
-	cache.db, err = bolt.Open("cacheDB", 0600, nil)
-	if err != nil {
-		log.Fatal("[ERROR]")
-	}
-	defer cache.db.Close()
-
-	err = cache.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("OperationBucket"))
-		result = b.Get([]byte(operation))
-		if result == nil {
-			return bolt.ErrInvalid
+func (cache *CacheManager) retrieveResult(operation string) (string, error) {
+	if cache.c != nil {
+		if item, found := cache.c.Get(operation); found {
+			return item.(string), nil
+		} else {
+			return "", nil
 		}
-		return nil
-	})
-
-	if err != nil {
-		return "", false
 	}
-
-	return string(result), true
+	return "", errors.New("[CACHE] Cache not found")
 }
