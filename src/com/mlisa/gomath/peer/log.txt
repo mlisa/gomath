@@ -1,0 +1,64 @@
+2017/11/06 15:13:00 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:25:51 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:28:27 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:28:27 [PEER] Found a coordinator!
+2017/11/06 15:28:27 [PEER] I'm in!
+2017/11/06 15:28:34 [PEER] Sending RequestForCache
+2017/11/06 15:28:34 []
+2017/11/06 15:28:36 [PEER] Sending RequestForCache
+2017/11/06 15:28:36 []
+2017/11/06 15:28:37 [PEER] Sending RequestForCache
+2017/11/06 15:28:37 []
+2017/11/06 15:28:37 [PEER] Sending RequestForCache
+2017/11/06 15:28:37 []
+2017/11/06 15:32:59 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:32:59 [PEER] Found a coordinator!
+2017/11/06 15:32:59 [PEER] I'm in!
+2017/11/06 15:33:05 [PEER] Sending RequestForCache
+2017/11/06 15:33:05 []
+2017/11/06 15:33:12 [PEER] Sending RequestForCache
+2017/11/06 15:33:12 []
+2017/11/06 15:33:13 [PEER] Sending RequestForCache
+2017/11/06 15:33:13 []
+2017/11/06 15:33:43 [PEER] Sending RequestForCache
+2017/11/06 15:33:43 []
+2017/11/06 15:33:49 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:33:49 [PEER] Found a coordinator!
+2017/11/06 15:33:49 [PEER] I'm in!
+2017/11/06 15:33:54 [PEER] Sending RequestForCache
+2017/11/06 15:33:54 []
+2017/11/06 15:33:57 [PEER] Sending RequestForCache
+2017/11/06 15:33:57 []
+2017/11/06 15:33:59 [PEER] Sending RequestForCache
+2017/11/06 15:33:59 []
+2017/11/06 15:33:59 [PEER] Sending RequestForCache
+2017/11/06 15:33:59 []
+2017/11/06 15:33:59 [PEER] Sending RequestForCache
+2017/11/06 15:33:59 []
+2017/11/06 15:35:00 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:39:06 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:40:54 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:40:54 [PEER] Found a coordinator!
+2017/11/06 15:40:54 [PEER] I'm in!
+2017/11/06 15:41:00 [PEER] Sending RequestForCache
+2017/11/06 15:41:00 []
+2017/11/06 15:41:03 [PEER] Sending RequestForCache
+2017/11/06 15:41:03 []
+2017/11/06 15:41:26 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:41:26 [PEER] Found a coordinator!
+2017/11/06 15:41:26 [PEER] I'm in!
+2017/11/06 15:41:27 [CONTROLLER] Saved result :18
+2017/11/06 15:42:13 unknown type
+2017/11/06 15:42:13 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:45:47 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:45:47 [PEER] Found a coordinator!
+2017/11/06 15:45:47 [PEER] I'm in!
+2017/11/06 15:45:51 [CONTROLLER] Saved result :8
+2017/11/06 15:49:13 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 15:49:19 [CONTROLLER] Saved result :8
+2017/11/06 16:04:47 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 16:17:32 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 16:17:46 [PEER] Try to connect to 127.0.0.1:8081 coordinator
+2017/11/06 16:17:46 [PEER] Found a coordinator!
+2017/11/06 16:17:46 [PEER] I'm in!
+2017/11/06 16:21:55 [CONTROLLER] Saved result :6

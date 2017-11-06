@@ -50,3 +50,13 @@ go get github.com/gogo/protobuf/gogoproto
 ### Code generation
 
 `protoc -I=. -I=$GOPATH/src --gogoslick_out=. *.proto`
+
+## BoltDB
+
+### Link
+
+https://github.com/boltdb/bolt
+
+### Installation
+
+`go get github.com/boltdb/bolt/...`

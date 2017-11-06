@@ -1,9 +1,10 @@
-package main
+package peer
 
 import (
 	"fmt"
-	"github.com/boltdb/bolt"
 	"log"
+
+	"github.com/boltdb/bolt"
 )
 
 type CacheManager struct {
@@ -12,7 +13,7 @@ type CacheManager struct {
 
 func (cache *CacheManager) addNewOperation(operation string, result string) {
 	var err error
-	cache.db, err = bolt.Open("cacheDB", 0600, nil)
+	cache.db, err = bolt.Open("peer/cacheDB", 0600, nil)
 	if err != nil {
 		log.Fatal("[ERROR]")
 	}

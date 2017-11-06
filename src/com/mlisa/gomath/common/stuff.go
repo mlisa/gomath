@@ -3,10 +3,11 @@ package common
 import (
 	"encoding/json"
 	//"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
 type Peer struct {
@@ -20,7 +21,7 @@ type Config struct {
 }
 
 func GetConfig(who string) Config {
-	fileName := "config_" + who + ".json"
+	fileName := who + "/config_" + who + ".json"
 	absPath, _ := filepath.Abs(filepath.Clean(fileName))
 	configuration := Config{}
 	file, err := os.Open(absPath)
