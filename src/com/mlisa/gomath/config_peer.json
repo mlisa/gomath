@@ -1,0 +1,13 @@
+{
+  "myself" : {
+    "id" : "peer",
+    "address" : "127.0.0.1:8082"
+  },
+  "coordinators" :
+      [
+        {
+          "id" : "coordinator",
+          "address" : "127.0.0.1:8081"
+        }
+      ]
+}
