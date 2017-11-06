@@ -3,9 +3,16 @@
 ## Dependencies 
 
 `protoactor-go`
+
 `protobuf`
+
 `protoc-gen-gogoslick`
 
+`gocui`
+
+`go-cache`
+
+`pigeon`
 
 ## Proto.Actor
 
@@ -50,6 +57,30 @@ go get github.com/gogo/protobuf/gogoproto
 ### Code generation
 
 `protoc -I=. -I=$GOPATH/src --gogoslick_out=. *.proto`
+
+## Pigeon
+
+### Link
+
+https://github.com/mna/pigeon
+
+### Installation
+
+`go get -u github.com/mna/pigeon`
+
+### Code generation
+
+`pigeon -optimize-grammar pegmatch.peg > pegmatch.go`
+
+## gocui
+
+### Link
+
+https://github.com/jroimartin/gocui
+
+### Installation
+
+go get github.com/jroimartin/gocui
 
 ## go-cache
 
