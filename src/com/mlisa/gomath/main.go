@@ -7,6 +7,7 @@ import (
 
 	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
+	"github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
@@ -17,7 +18,7 @@ import (
 func main() {
 	//myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(common.GetConfig().Myself.Address)
+	remote.Start(common.GetConfig("peer").Myself.Address)
 
 	logFile, err := os.OpenFile("log.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
@@ -29,14 +30,16 @@ func main() {
 	//create an actor receiving messages and pushing them onto the channel
 	props := actor.FromInstance(&Peer{})
 
-	peer, err := actor.SpawnNamed(props, common.GetConfig().Myself.Name)
+	peer, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
 
 	if err != nil {
 		println("[PEER] Name already in use")
 	}
 
+	console.ReadLine()
+
 	g, _ := gocui.NewGui(gocui.Output256)
-	//defer g.Close()
+	defer g.Close()
 
 	cache := CacheManager{}
 

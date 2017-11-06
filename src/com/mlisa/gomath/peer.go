@@ -22,11 +22,11 @@ func (peer *Peer) Receive(context actor.Context) {
 	case *actor.Started:
 		fmt.Println("[PEER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
 
-		coordinators := common.GetConfig().Coordinators //lettura da file config
+		coordinators := common.GetConfig("peer").Coordinators //lettura da file config
 		for _, PID := range coordinators {
-			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
-			coord := actor.NewPID(PID.Address, PID.Name)
-			coord.Request(&message.Hello{context.Self()}, context.Self())
+			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
+			coord := actor.NewPID(PID.Address, PID.Id)
+			coord.Request(&message.Hello{}, context.Self())
 		}
 	case *message.Hello:
 		peer.connectedToController = true
@@ -35,7 +35,7 @@ func (peer *Peer) Receive(context actor.Context) {
 	case *message.Available:
 		log.Println("[PEER] Found a coordinator!")
 		peer.coordinator = context.Sender()
-		peer.coordinator.Request(&message.Register{context.Self()}, context.Self())
+		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 
 	case *actor.Stopping:

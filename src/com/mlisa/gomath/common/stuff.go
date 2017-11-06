@@ -2,11 +2,11 @@ package common
 
 import (
 	"encoding/json"
+	//"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/AsynkronIT/protoactor-go/actor"
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
 type Peer struct {

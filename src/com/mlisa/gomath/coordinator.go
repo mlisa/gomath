@@ -30,7 +30,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
 		// update all others peers newnode
 		for _, PID := range coordinator.Peers {
-			actor.NewPID(PID.Id, PID.Address).Request(&message.NewNode{context.Sender()}, context.Self())
+			actor.NewPID(PID.Address, PID.Id).Request(&message.NewNode{context.Sender()}, context.Self())
 		}
 	case *actor.Stopping:
 		log.Println("[COORDINATOR] Stopping, actor is about shut down")
@@ -43,7 +43,7 @@ func main() {
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 	remote.Start(common.GetConfig("coordinator").Myself.Address)
 	props := actor.FromInstance(&Coordinator{MaxPeers: 50, Peers: make([]*actor.PID, 0, 50)})
-	_, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
+	_, err := actor.SpawnNamed(props, common.GetConfig("coordinator").Myself.Id)
 	if err != nil {
 		log.Panicln(err)
 	}
