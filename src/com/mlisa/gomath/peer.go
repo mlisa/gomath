@@ -3,11 +3,8 @@ package main
 import (
 	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"runtime"
 
 	console "github.com/AsynkronIT/goconsole"
@@ -15,44 +12,30 @@ import (
 	"github.com/AsynkronIT/protoactor-go/remote"
 )
 
-var myself common.PID
-
-var otherNodes map[string]string
-
-var operationsDone map[string]string
-
-var coordinator *actor.PID
-
-func getConfig() common.Config {
-	absPath, _ := filepath.Abs("config.json")
-	file, err := os.Open(absPath)
-	if err != nil {
-		log.Println("[ERROR] " + err.Error())
-	}
-	decoder := json.NewDecoder(file)
-	configuration := common.Config{}
-	decoder.Decode(&configuration)
-	return configuration
+type Peer struct {
+	otherNodes  []*actor.PID
+	coordinator *actor.PID
+	controller  *actor.PID
 }
 
-func Receive(context actor.Context) {
+func (peer *Peer) Receive(context actor.Context) {
 
-	switch msg := context.Message().(type) {
+	switch context.Message().(type) {
 	case *actor.Started:
-		fmt.Println("[PEER] Started, initialize actor here")
+		fmt.Println("[PEER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
 
-		coordinators := getConfig().Coordinators //lettura da file config
+		coordinators := common.GetConfig().Coordinators //lettura da file config
 		for _, PID := range coordinators {
-			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Name)
-			coordinator := actor.NewPID(PID.Address, PID.Name)
-			coordinator.Tell(&message.Hello{actor.NewPID(myself.Address, myself.Name), myself.Address, myself.Name})
+			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
+			coordinator := actor.NewPID(PID.Address, PID.Id)
+			coordinator.Request(&message.Hello{}, context.Self())
 		}
 
 	case *message.Available:
 		log.Println("[PEER] Found a coordinator!")
-		coordinator = actor.NewPID(msg.Address, msg.Name)
-		coordinator.Tell(&message.Register{myself.Address, myself.Name})
-		context.SetBehavior(Connected)
+		peer.coordinator = context.Sender()
+		peer.coordinator.Request(&message.Register{}, context.Self())
+		context.SetBehavior(peer.Connected)
 
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
@@ -62,14 +45,13 @@ func Receive(context actor.Context) {
 
 }
 
-func Connected(context actor.Context) {
+func (peer *Peer) Connected(context actor.Context) {
 	switch msg := context.Message().(type) {
-
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		otherNodes := msg.Nodes
 		log.Println(otherNodes)
-		context.SetBehavior(Operative)
+		context.SetBehavior(peer.Operative)
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
@@ -77,17 +59,10 @@ func Connected(context actor.Context) {
 	}
 }
 
-func Operative(context actor.Context) {
-	switch msg := context.Message().(type) {
-
+func (peer *Peer) Operative(context actor.Context) {
+	switch context.Message().(type) {
 	case *message.RequestForCache:
-		result, doesExist := operationsDone[msg.Operation]
-		if doesExist {
-			response := &message.Response{result, myself.Name, myself.Name}
-			sender := actor.NewPID(msg.SenderAddress, msg.SenderName)
-			sender.Tell(response)
-		}
-
+		log.Println("[PEER] request for cached result")
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
@@ -96,19 +71,14 @@ func Operative(context actor.Context) {
 }
 
 func main() {
-	myself = getConfig().Myself
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(myself.Address)
-
+	remote.Start(common.GetConfig("peer").Myself.Address)
 	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromFunc(Receive)
-
-	_, err := actor.SpawnNamed(props, myself.Name)
+	props := actor.FromInstance(&Peer{})
+	_, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
 
 	if err != nil {
 		println("[PEER] Name already in use")
 	}
-
 	console.ReadLine()
-
 }

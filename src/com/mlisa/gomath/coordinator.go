@@ -4,57 +4,48 @@ import (
 	"com/mlisa/gomath/common"
 	"com/mlisa/gomath/message"
 	"log"
-	"runtime"
 
 	console "github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 )
 
-type coordinatorInfo struct {
-	PID     actor.PID
-	Name    string
-	Address string
+type Coordinator struct {
+	MaxPeers int
+	Peers    []*actor.PID
 }
 
-// Max 50 nodes per region
-var maxNodes = 50
-var nodes = make([]common.PID, 0, maxNodes)
-var coordinator coordinatorInfo
-
-func waitingForNodes(context actor.Context) {
-	switch msg := context.Message().(type) {
+func (coordinator *Coordinator) Receive(context actor.Context) {
+	switch context.Message().(type) {
 	case *message.Hello:
-		//log.Println("[COORDINATOR] message \"Hello\" from " + msg.Name + " " + msg.Address)
-		/// check availability
-		msg.Sender.Tell(coordinator.PID)
-	case *message.Register:
-		//log.Println("[COORDINATOR] Sending {{region}} nodes to " + msg.Name + " " + msg.Address)
-
-		//sender := actor.NewPID(msg.Address, msg.Name)
-		//sender.Tell(&message.Welcome{nodes})
-		//message := &message.NewNode{msg.Address, msg.Name}
-
-		for range nodes {
-			//	sender = actor.NewPID(v, k)
-			//sender.Tell(message)
+		log.Println("[COORDINATOR] message \"Hello\" from peer " + context.Sender().Id)
+		if len(coordinator.Peers) < coordinator.MaxPeers {
+			coordinator.Peers = append(coordinator.Peers, context.Sender())
+			context.Sender().Request(&message.Available{}, context.Self())
+		} else {
+			context.Sender().Request(&message.NotAvailable{}, context.Self())
 		}
-		//nodes[msg.Name] = msg.Address
-
+	case *message.Register:
+		log.Println("[COORDINATOR] Sending {{region}} nodes to " + context.Sender().Id + " " + context.Sender().Address)
+		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
+		// update all others peers newnode
+		for _, PID := range coordinator.Peers {
+			actor.NewPID(PID.Id, PID.Address).Request(&message.NewNode{context.Sender()}, context.Self())
+		}
+	case *actor.Stopping:
+		log.Println("[COORDINATOR] Stopping, actor is about shut down")
+	case *actor.Stopped:
+		log.Println("[COORDINATOR] Stopped, actor and it's children are stopped")
 	}
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	name := "coordinator"
-	address := "127.0.0.1:8081"
-	remote.Start(address)
-	props := actor.FromFunc(waitingForNodes)
-	pid, err := actor.SpawnNamed(props, name)
+	//runtime.GOMAXPROCS(runtime.NumCPU())
+	remote.Start(common.GetConfig("coordinator").Myself.Address)
+	props := actor.FromInstance(&Coordinator{MaxPeers: 50, Peers: make([]*actor.PID, 0, 50)})
+	_, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
 	if err != nil {
 		log.Panicln(err)
 	}
-	coordinator = coordinatorInfo{*pid, name, address}
-
 	console.ReadLine()
 }
