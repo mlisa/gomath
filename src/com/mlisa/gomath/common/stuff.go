@@ -5,27 +5,31 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
-type PID struct {
-	Name    string
+type Peer struct {
+	Id      string
 	Address string
 }
 
 type Config struct {
-	Myself       PID
-	Coordinators []PID
+	Myself       Peer
+	Coordinators []*actor.PID
 }
 
-func getConfig() Config {
-	absPath, _ := filepath.Abs("com/mlisa/gomath/config.json")
+func GetConfig(who string) Config {
+	fileName := "config_" + who + ".json"
+	absPath, _ := filepath.Abs(filepath.Clean(fileName))
+	configuration := Config{}
 	file, err := os.Open(absPath)
 	if err != nil {
 		log.Println("[ERROR] " + err.Error())
 	}
 	defer file.Close()
-	decoder := json.NewDecoder(file)
-	configuration := Config{}
-	decoder.Decode(&configuration)
+	if err = json.NewDecoder(file).Decode(&configuration); err != nil {
+		log.Fatalln("[ERROR] " + err.Error())
+	}
 	return configuration
 }
