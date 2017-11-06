@@ -8,6 +8,7 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/jroimartin/gocui"
 	"log"
+	"strconv"
 )
 
 type Controller struct {
@@ -21,7 +22,9 @@ func (controller *Controller) Receive(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *actor.Started:
 		log.Println("[CONTROLLER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
-		controller.peer.Request(message.Hello{}, context.Self())
+		log.Println("[CONTROLLER] Sending hello to " + controller.peer.Id + " " + controller.peer.Address)
+		controller.peer.Request(&message.Hello{}, context.Self())
+		//context.Request(controller.peer, message.Hello{})
 
 	case *message.AskForResult:
 		//Policy per decidere se calcolarlo qui o meno
@@ -41,11 +44,13 @@ func (controller *Controller) Receive(context actor.Context) {
 					fmt.Fprint(output, result)
 					return nil
 				})
-				controller.cache.addNewOperation(msg.Operation, string(result.(int)))
+				log.Println("[CONTROLLER] Saved result :" + strconv.Itoa(result.(int)))
+				controller.cache.addNewOperation(msg.Operation, strconv.Itoa(result.(int)))
 			}
 		}
 
 	case *message.Response:
+		log.Println("Received result " + msg.Result)
 		controller.gui.Update(func(g *gocui.Gui) error {
 			output, _ := g.View("Output")
 			fmt.Fprint(output, msg.Result)
@@ -58,15 +63,16 @@ func (controller *Controller) Receive(context actor.Context) {
 		})
 
 	case *message.SearchInCache:
-		result, found := controller.cache.retrieveResult(msg.Operation)
 		controller.gui.Update(func(g *gocui.Gui) error {
 			output, _ := g.View("Log")
-			fmt.Fprint(output, "Receive SearchInCache message from peer")
+			fmt.Fprint(output, "Received SearchInCache message from peer")
 			return nil
 		})
 
+		result, found := controller.cache.retrieveResult(msg.Operation)
 		if found {
-			context.Sender().Tell(message.ResponseFromCache{result, msg.FromPeer})
+			log.Println("Retrieved result " + result + " from cache")
+			context.Sender().Tell(&message.ResponseFromCache{result, msg.FromPeer})
 		}
 
 	}

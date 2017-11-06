@@ -15,6 +15,10 @@ type Peer struct {
 	coordinator *actor.PID
 
 	controller *actor.PID
+
+	receivedNodes bool
+
+	connectedToController bool
 }
 
 func (peer *Peer) Receive(context actor.Context) {
@@ -30,6 +34,7 @@ func (peer *Peer) Receive(context actor.Context) {
 			coord.Request(&message.Hello{context.Self()}, context.Self())
 		}
 	case *message.Hello:
+		peer.connectedToController = true
 		peer.controller = context.Sender()
 		log.Println(peer.controller.Id)
 	case *message.Available:
@@ -52,7 +57,17 @@ func (peer *Peer) Connected(context actor.Context) {
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
-		context.SetBehavior(peer.Operative)
+		peer.receivedNodes = true
+		if peer.connectedToController && peer.receivedNodes {
+			context.SetBehavior(peer.Operative)
+		}
+	case *message.Hello:
+		peer.controller = context.Sender()
+		log.Println(peer.controller.Id)
+		peer.connectedToController = true
+		if peer.connectedToController && peer.receivedNodes {
+			context.SetBehavior(peer.Operative)
+		}
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
@@ -68,37 +83,22 @@ func (peer *Peer) Operative(context actor.Context) {
 		log.Println(peer.otherNodes)
 		for _, peer := range peer.otherNodes {
 			log.Println("[PEER] Sending RequestForCache to" + peer.Id + peer.Address)
-			peer.Request(message.RequestForCache{Operation: msg.Operation}, context.Self())
+			peer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		}
 	case *message.RequestForCache:
-		peer.controller.Request(&message.SearchInCache{msg.Operation, context.Sender()}, context.Self())
 		log.Println("[PEER] Received RequestForCache")
+		log.Println(peer.controller)
+		peer.controller.Request(&message.SearchInCache{msg.Operation, context.Sender()}, context.Self())
 	case *message.ResponseFromCache:
-		msg.SendTo.Tell(message.Response{Result: msg.Result})
 		log.Println("[PEER] Sending ResponseFromCache")
+		msg.SendTo.Request(&message.Response{Result: msg.Result}, context.Self())
+
+	case *message.Response:
+		log.Println("[PEER] Received Response from peer!")
+		peer.controller.Tell(msg)
 	case *actor.Stopping:
 		log.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:
 		log.Println("[PEER] Stopped, actor and it's children are stopped")
 	}
 }
-
-/*
-func main() {
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(myself.Address)
-
-	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromFunc(Receive)
-
-	myself, err := actor.SpawnNamed(props, getConfig().Myself.Name)
-	log.Println(myself.Id)
-	if err != nil {
-		println("[PEER] Name already in use")
-	}
-
-	console.ReadLine()
-
-}
-*/
