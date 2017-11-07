@@ -13,7 +13,7 @@ type Coordinator struct {
 }
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
-	switch context.Message().(type) {
+	switch msg := context.Message().(type) {
 	case *message.Hello:
 		log.Println("[COORDINATOR] message \"Hello\" from peer " + context.Sender().Id)
 		if len(coordinator.Peers) < coordinator.MaxPeers {
@@ -28,10 +28,13 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		for _, PID := range coordinator.Peers {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.NewNode{context.Sender()}, context.Self())
 		}
+		context.Watch(context.Sender())
 		coordinator.Peers = append(coordinator.Peers, context.Sender())
 	case *actor.Stopping:
 		log.Println("[COORDINATOR] Stopping, actor is about shut down")
 	case *actor.Stopped:
 		log.Println("[COORDINATOR] Stopped, actor and it's children are stopped")
+	case *actor.Terminated:
+		log.Println(msg)
 	}
 }
