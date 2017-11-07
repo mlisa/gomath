@@ -4,10 +4,11 @@ import (
 	"log"
 	"runtime"
 
-	"com/mlisa/gomath/common"
-	"com/mlisa/gomath/peer"
 	"io"
 	"os"
+
+	"github.com/lisa/gomath/common"
+	"github.com/lisa/gomath/peer"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"

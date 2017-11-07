@@ -2,11 +2,12 @@ package peer
 
 import (
 	"bytes"
-	"com/mlisa/gomath/message"
-	"com/mlisa/gomath/parser"
 	"fmt"
 	"log"
 	"strconv"
+
+	"github.com/mlisa/gomath/message"
+	"github.com/mlisa/gomath/parser"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/jroimartin/gocui"

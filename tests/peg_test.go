@@ -2,9 +2,10 @@ package pegmatch_test
 
 import (
 	"bytes"
-	"com/mlisa/gomath/parser"
 	"fmt"
 	"testing"
+
+	"github.com/lisa/gomath/parser"
 )
 
 func TestPegmatchSimple(t *testing.T) {

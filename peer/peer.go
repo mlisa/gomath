@@ -1,10 +1,11 @@
 package peer
 
 import (
-	"com/mlisa/gomath/common"
-	"com/mlisa/gomath/message"
 	"fmt"
 	"log"
+
+	"github.com/mlisa/gomath/common"
+	"github.com/mlisa/gomath/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 )

@@ -1,8 +1,9 @@
 package coordinator
 
 import (
-	"com/mlisa/gomath/message"
 	"log"
+
+	"github.com/mlisa/gomath/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 )

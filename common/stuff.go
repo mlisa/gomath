@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	//"github.com/AsynkronIT/protoactor-go/actor"
 	"log"
 	"os"
 	"path/filepath"

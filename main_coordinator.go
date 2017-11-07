@@ -1,9 +1,10 @@
 package main
 
 import (
-	"com/mlisa/gomath/coordinator"
 	"log"
 	"runtime"
+
+	"github.com/mlisa/gomath/coordinator"
 
 	console "github.com/AsynkronIT/goconsole"
 	"github.com/AsynkronIT/protoactor-go/actor"
