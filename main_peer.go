@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/lisa/gomath/common"
-	"github.com/lisa/gomath/peer"
+	"github.com/mlisa/gomath/common"
+	"github.com/mlisa/gomath/peer"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"

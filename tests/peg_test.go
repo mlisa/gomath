@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/lisa/gomath/parser"
+	"github.com/mlisa/gomath/parser"
 )
 
 func TestPegmatchSimple(t *testing.T) {
