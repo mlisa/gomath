@@ -10,7 +10,7 @@ _GO_PROJECT_DIR="${_:a:h}"
 if [[ $(command -v go) ]]; then
   # Default folders for golang workspace
   mkdir -p ${_GO_PROJECT_DIR}/{src,pkg,bin}
-  touch requirements.txt
+  #touch requirements.txt
 
   #TEMP_GOPATH="${GOPATH##*:}"
   GOPATH="${_GO_PROJECT_DIR}"
