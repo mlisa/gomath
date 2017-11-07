@@ -1,5 +1,13 @@
 # gomath
 
+## Installation
+
+`go get github.com/mlisa/gomath/...`
+
+Download and compile both peer and coordinator package (binary in $GOPATH/bin/).
+
+To compile a module run `go run *.go` inside the folder.
+
 ## Dependencies 
 
 `protoactor-go`
