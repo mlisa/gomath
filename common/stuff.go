@@ -20,7 +20,7 @@ type Config struct {
 }
 
 func GetConfig(who string) Config {
-	fileName := who + "/config_" + who + ".json"
+	fileName := "config_" + who + ".json"
 	absPath, _ := filepath.Abs(filepath.Clean(fileName))
 	configuration := Config{}
 	file, err := os.Open(absPath)

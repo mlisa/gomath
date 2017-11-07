@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/mlisa/gomath/common"
-	"github.com/mlisa/gomath/peer"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
@@ -19,7 +18,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	remote.Start(common.GetConfig("peer").Myself.Address)
 
-	logFile, err := os.OpenFile("peer/log.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	logFile, err := os.OpenFile("log.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -27,11 +26,11 @@ func main() {
 	log.SetOutput(mw)
 
 	g, _ := gocui.NewGui(gocui.Output256)
-	controller := peer.Controller{Gui: g, Cache: &peer.CacheManager{}}
+	controller := Controller{Gui: g, Cache: &CacheManager{}}
 	defer g.Close()
 
 	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromInstance(&peer.Peer{Controller: &controller})
+	props := actor.FromInstance(&Peer{Controller: &controller})
 	peer, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
 	if err != nil {
 		println("[PEER] Name already in use")
@@ -87,7 +86,7 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func initKeybindings(g *gocui.Gui, controller *peer.Controller) error {
+func initKeybindings(g *gocui.Gui, controller *Controller) error {
 	// quit
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
