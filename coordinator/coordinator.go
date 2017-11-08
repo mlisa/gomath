@@ -9,8 +9,9 @@ import (
 )
 
 type Coordinator struct {
-	MaxPeers int
-	Peers    map[string]*actor.PID
+	MaxPeers     int
+	Peers        map[string]*actor.PID
+	Coordinators []Coordinators
 }
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
@@ -24,7 +25,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		}
 	case *message.Register:
 		// Peer wants to be registered in the region, update the nodes
-		log.Println("[COORDINATOR] Sending {{region}} nodes to " + context.Sender().Id + " " + context.Sender().Address)
+		log.Printf("[COORDINATOR] Added perr '%s' to region", context.Sender().Id)
 		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
 		// update all others peers newnode
 		for _, PID := range coordinator.Peers {
@@ -32,12 +33,16 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		}
 		context.Watch(context.Sender())
 		coordinator.Peers[context.Sender().String()] = context.Sender()
+		log.Println(context.Sender().String())
 	case *actor.Stopping:
 		log.Println("[COORDINATOR] Stopping, actor is about shut down")
 	case *actor.Stopped:
 		log.Println("[COORDINATOR] Stopped, actor and it's children are stopped")
 	case *actor.Terminated:
 		// Watch for terminated peers of the region
-		log.Println(msg)
+		log.Printf("[COORDINATOR] detected node failure: '%s'", msg.Who.Id)
+		if _, present := coordinator.Peers[msg.Who.String()]; present {
+			delete(coordinator.Peers, msg.Who.String())
+		}
 	}
 }
