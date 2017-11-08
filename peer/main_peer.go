@@ -4,34 +4,33 @@ import (
 	"log"
 	"runtime"
 
-	"io"
-	"os"
-
 	"github.com/mlisa/gomath/common"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
+	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+var (
+	config = kingpin.Flag("config", "Configuration file for peer").Short('c').Default("config_peer.json").String()
 )
 
 func main() {
+	kingpin.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	remote.Start(common.GetConfig("peer").Myself.Address)
-
-	logFile, err := os.OpenFile("log.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	var config, err = common.GetFileConfig(*config)
 	if err != nil {
-		panic(err)
+		kingpin.FatalUsage("Wrong usage, please see the help")
 	}
-	mw := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(mw)
+	remote.Start(config.Myself.Address)
 
 	g, _ := gocui.NewGui(gocui.Output256)
 	controller := Controller{Gui: g, Cache: &CacheManager{}}
 	defer g.Close()
 
-	//create an actor receiving messages and pushing them onto the channel
-	props := actor.FromInstance(&Peer{Controller: &controller})
-	peer, err := actor.SpawnNamed(props, common.GetConfig("peer").Myself.Id)
+	props := actor.FromInstance(&Peer{Controller: &controller, Config: config})
+	peer, err := actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		println("[PEER] Name already in use")
 	}

@@ -11,25 +11,38 @@ import (
 )
 
 type Peer struct {
-	otherNodes  []*actor.PID
+	otherNodes  map[string]*actor.PID
 	coordinator *actor.PID
 	Controller  *Controller
+	Config      common.Config
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-	switch context.Message().(type) {
+	switch msg := context.Message().(type) {
 	case *actor.Started:
-		fmt.Println("[PEER] Started, initialize actor here, I'm " + context.Self().Id + " " + context.Self().Address)
-
-		coordinators := common.GetConfig("peer").Coordinators //lettura da file config
+		coordinators := peer.Config.Coordinators //lettura da file config
 		for _, PID := range coordinators {
 			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
-			coord := actor.NewPID(PID.Address, PID.Id)
-			coord.Request(&message.Hello{}, context.Self())
+			tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+			log.Println(tempCoordinator.Id)
+			tempCoordinator.Request(&message.Hello{}, context.Self())
+		}
+	case *message.LostConnectionCoordinator:
+		coordinators := peer.Config.Coordinators //lettura da file config
+		for i, PID := range coordinators {
+			if PID.Address == msg.Coordinator.Address {
+				log.Println("[PEER] Removing dead coordinator..")
+				coordinators = append(coordinators[:i], coordinators[i+1:]...)
+			} else {
+				log.Println("[PEER] Try to reconnect to " + PID.Address + " " + PID.Id)
+				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+				tempCoordinator.Request(&message.Hello{peer.Config.Myself.Latency, peer.Config.Myself.ComputationCapability, peer.Config.Myself.Queue}, context.Self())
+			}
 		}
 	case *message.Available:
-		log.Println("[PEER] Found a coordinator!")
 		peer.coordinator = context.Sender()
+		context.Watch(peer.coordinator)
+		log.Println("[PEER] Found a coordinator! " + peer.coordinator.Address + peer.coordinator.Id)
 		//TODO: requestfuture se no poi si pianta
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
@@ -57,6 +70,10 @@ func (peer *Peer) Connected(context actor.Context) {
 
 func (peer *Peer) Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
+	case *actor.Terminated:
+		log.Println("[PEER] Lost Connection from coordinator " + msg.Who.Address + msg.Who.Id)
+		context.SetBehavior(peer.Receive)
+		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 	case *message.AskForResult:
 		log.Println("[PEER] Sending RequestForCache")
 		log.Println(peer.otherNodes)
@@ -64,6 +81,11 @@ func (peer *Peer) Operative(context actor.Context) {
 			log.Println("[PEER] Sending RequestForCache to" + peer.Id + peer.Address)
 			peer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		}
+	case *message.NewNode:
+		peer.otherNodes[msg.Newnode.Address+msg.Newnode.Id] = msg.Newnode
+	case *message.DeadNode:
+		delete(peer.otherNodes, msg.DeadNode.Address+msg.DeadNode.Id)
+		//peer.otherNodes = append(peer.otherNodes, msg.DeadNode)
 	case *message.RequestForCache:
 		log.Println("[PEER] Received RequestForCache")
 		res := peer.Controller.SearchInCache(msg.Operation)

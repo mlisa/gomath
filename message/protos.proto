@@ -3,7 +3,11 @@ import "github.com/AsynkronIT/protoactor-go/actor/protos.proto";
 package message;
 
 //Message from a new node to every coordinator, to discover if it is avalaible
-message Hello { }
+message Hello {
+	float Latency = 1;
+	float ComputationCapability = 2;
+	float Queue = 3;
+}
 
 //Response msg from coordinator to Hello msg
 message Available { }
@@ -15,12 +19,16 @@ message Register { }
 
 //Message to new node from coordinator containing the peer list
 message Welcome {
-	repeated actor.PID nodes = 1;
+	map<string, actor.PID>  nodes = 1;
 }
 
 //Message sent to all peers when a new node enter the region
 message NewNode {
 	actor.PID newnode = 1;	
+}
+
+message DeadNode {
+	actor.PID deadNode = 1;
 }
 
 //Message sent by a node to other nodes (also coordinator if necessary)
@@ -47,4 +55,8 @@ message SearchInCache {
 //Response msg from a peer to another peer
 message ResponseFromCache {
 	string Result = 1;
+}
+
+message LostConnectionCoordinator{
+	actor.PID coordinator = 1;
 }

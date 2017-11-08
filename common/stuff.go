@@ -9,19 +9,23 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
-type Peer struct {
-	Id      string
-	Address string
+type Node struct {
+	Id                    string
+	Address               string
+	Latency               float32
+	ComputationCapability float32
+	Queue                 float32
 }
 
 type Config struct {
-	Myself       Peer
+	Myself       Node
 	Coordinators []*actor.PID
 }
 
 func GetFileConfig(path string) (Config, error) {
 	fileAbs, _ := filepath.Abs(path)
 	configuration := Config{}
+
 	if _, err := os.Stat(fileAbs); !os.IsNotExist(err) {
 		file, err := os.Open(fileAbs)
 		if err != nil {

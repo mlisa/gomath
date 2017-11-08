@@ -14,11 +14,13 @@
 		Register
 		Welcome
 		NewNode
+		DeadNode
 		RequestForCache
 		Response
 		AskForResult
 		SearchInCache
 		ResponseFromCache
+		LostConnectionCoordinator
 */
 package message
 
@@ -29,6 +31,9 @@ import actor "github.com/AsynkronIT/protoactor-go/actor"
 
 import strings "strings"
 import reflect "reflect"
+import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+
+import encoding_binary "encoding/binary"
 
 import io "io"
 
@@ -45,11 +50,35 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // Message from a new node to every coordinator, to discover if it is avalaible
 type Hello struct {
+	Latency               float32 `protobuf:"fixed32,1,opt,name=Latency,proto3" json:"Latency,omitempty"`
+	ComputationCapability float32 `protobuf:"fixed32,2,opt,name=ComputationCapability,proto3" json:"ComputationCapability,omitempty"`
+	Queue                 float32 `protobuf:"fixed32,3,opt,name=Queue,proto3" json:"Queue,omitempty"`
 }
 
 func (m *Hello) Reset()                    { *m = Hello{} }
 func (*Hello) ProtoMessage()               {}
 func (*Hello) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{0} }
+
+func (m *Hello) GetLatency() float32 {
+	if m != nil {
+		return m.Latency
+	}
+	return 0
+}
+
+func (m *Hello) GetComputationCapability() float32 {
+	if m != nil {
+		return m.ComputationCapability
+	}
+	return 0
+}
+
+func (m *Hello) GetQueue() float32 {
+	if m != nil {
+		return m.Queue
+	}
+	return 0
+}
 
 // Response msg from coordinator to Hello msg
 type Available struct {
@@ -76,14 +105,14 @@ func (*Register) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []i
 
 // Message to new node from coordinator containing the peer list
 type Welcome struct {
-	Nodes []*actor.PID `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
+	Nodes map[string]*actor.PID `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *Welcome) Reset()                    { *m = Welcome{} }
 func (*Welcome) ProtoMessage()               {}
 func (*Welcome) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{4} }
 
-func (m *Welcome) GetNodes() []*actor.PID {
+func (m *Welcome) GetNodes() map[string]*actor.PID {
 	if m != nil {
 		return m.Nodes
 	}
@@ -106,6 +135,21 @@ func (m *NewNode) GetNewnode() *actor.PID {
 	return nil
 }
 
+type DeadNode struct {
+	DeadNode *actor.PID `protobuf:"bytes,1,opt,name=deadNode" json:"deadNode,omitempty"`
+}
+
+func (m *DeadNode) Reset()                    { *m = DeadNode{} }
+func (*DeadNode) ProtoMessage()               {}
+func (*DeadNode) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{6} }
+
+func (m *DeadNode) GetDeadNode() *actor.PID {
+	if m != nil {
+		return m.DeadNode
+	}
+	return nil
+}
+
 // Message sent by a node to other nodes (also coordinator if necessary)
 type RequestForCache struct {
 	Operation string `protobuf:"bytes,1,opt,name=Operation,proto3" json:"Operation,omitempty"`
@@ -113,7 +157,7 @@ type RequestForCache struct {
 
 func (m *RequestForCache) Reset()                    { *m = RequestForCache{} }
 func (*RequestForCache) ProtoMessage()               {}
-func (*RequestForCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{6} }
+func (*RequestForCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{7} }
 
 func (m *RequestForCache) GetOperation() string {
 	if m != nil {
@@ -129,7 +173,7 @@ type Response struct {
 
 func (m *Response) Reset()                    { *m = Response{} }
 func (*Response) ProtoMessage()               {}
-func (*Response) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{7} }
+func (*Response) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{8} }
 
 func (m *Response) GetResult() string {
 	if m != nil {
@@ -145,7 +189,7 @@ type AskForResult struct {
 
 func (m *AskForResult) Reset()                    { *m = AskForResult{} }
 func (*AskForResult) ProtoMessage()               {}
-func (*AskForResult) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{8} }
+func (*AskForResult) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{9} }
 
 func (m *AskForResult) GetOperation() string {
 	if m != nil {
@@ -162,7 +206,7 @@ type SearchInCache struct {
 
 func (m *SearchInCache) Reset()                    { *m = SearchInCache{} }
 func (*SearchInCache) ProtoMessage()               {}
-func (*SearchInCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{9} }
+func (*SearchInCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{10} }
 
 func (m *SearchInCache) GetOperation() string {
 	if m != nil {
@@ -185,13 +229,28 @@ type ResponseFromCache struct {
 
 func (m *ResponseFromCache) Reset()                    { *m = ResponseFromCache{} }
 func (*ResponseFromCache) ProtoMessage()               {}
-func (*ResponseFromCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{10} }
+func (*ResponseFromCache) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{11} }
 
 func (m *ResponseFromCache) GetResult() string {
 	if m != nil {
 		return m.Result
 	}
 	return ""
+}
+
+type LostConnectionCoordinator struct {
+	Coordinator *actor.PID `protobuf:"bytes,1,opt,name=coordinator" json:"coordinator,omitempty"`
+}
+
+func (m *LostConnectionCoordinator) Reset()                    { *m = LostConnectionCoordinator{} }
+func (*LostConnectionCoordinator) ProtoMessage()               {}
+func (*LostConnectionCoordinator) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{12} }
+
+func (m *LostConnectionCoordinator) GetCoordinator() *actor.PID {
+	if m != nil {
+		return m.Coordinator
+	}
+	return nil
 }
 
 func init() {
@@ -201,11 +260,13 @@ func init() {
 	proto.RegisterType((*Register)(nil), "message.Register")
 	proto.RegisterType((*Welcome)(nil), "message.Welcome")
 	proto.RegisterType((*NewNode)(nil), "message.NewNode")
+	proto.RegisterType((*DeadNode)(nil), "message.DeadNode")
 	proto.RegisterType((*RequestForCache)(nil), "message.RequestForCache")
 	proto.RegisterType((*Response)(nil), "message.Response")
 	proto.RegisterType((*AskForResult)(nil), "message.AskForResult")
 	proto.RegisterType((*SearchInCache)(nil), "message.SearchInCache")
 	proto.RegisterType((*ResponseFromCache)(nil), "message.ResponseFromCache")
+	proto.RegisterType((*LostConnectionCoordinator)(nil), "message.LostConnectionCoordinator")
 }
 func (this *Hello) Equal(that interface{}) bool {
 	if that == nil {
@@ -230,6 +291,15 @@ func (this *Hello) Equal(that interface{}) bool {
 		}
 		return false
 	} else if this == nil {
+		return false
+	}
+	if this.Latency != that1.Latency {
+		return false
+	}
+	if this.ComputationCapability != that1.ComputationCapability {
+		return false
+	}
+	if this.Queue != that1.Queue {
 		return false
 	}
 	return true
@@ -376,6 +446,36 @@ func (this *NewNode) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Newnode.Equal(that1.Newnode) {
+		return false
+	}
+	return true
+}
+func (this *DeadNode) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*DeadNode)
+	if !ok {
+		that2, ok := that.(DeadNode)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.DeadNode.Equal(that1.DeadNode) {
 		return false
 	}
 	return true
@@ -533,12 +633,45 @@ func (this *ResponseFromCache) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *LostConnectionCoordinator) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*LostConnectionCoordinator)
+	if !ok {
+		that2, ok := that.(LostConnectionCoordinator)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if !this.Coordinator.Equal(that1.Coordinator) {
+		return false
+	}
+	return true
+}
 func (this *Hello) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 4)
+	s := make([]string, 0, 7)
 	s = append(s, "&message.Hello{")
+	s = append(s, "Latency: "+fmt.Sprintf("%#v", this.Latency)+",\n")
+	s = append(s, "ComputationCapability: "+fmt.Sprintf("%#v", this.ComputationCapability)+",\n")
+	s = append(s, "Queue: "+fmt.Sprintf("%#v", this.Queue)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -575,8 +708,18 @@ func (this *Welcome) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&message.Welcome{")
+	keysForNodes := make([]string, 0, len(this.Nodes))
+	for k, _ := range this.Nodes {
+		keysForNodes = append(keysForNodes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	mapStringForNodes := "map[string]*actor.PID{"
+	for _, k := range keysForNodes {
+		mapStringForNodes += fmt.Sprintf("%#v: %#v,", k, this.Nodes[k])
+	}
+	mapStringForNodes += "}"
 	if this.Nodes != nil {
-		s = append(s, "Nodes: "+fmt.Sprintf("%#v", this.Nodes)+",\n")
+		s = append(s, "Nodes: "+mapStringForNodes+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -589,6 +732,18 @@ func (this *NewNode) GoString() string {
 	s = append(s, "&message.NewNode{")
 	if this.Newnode != nil {
 		s = append(s, "Newnode: "+fmt.Sprintf("%#v", this.Newnode)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeadNode) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&message.DeadNode{")
+	if this.DeadNode != nil {
+		s = append(s, "DeadNode: "+fmt.Sprintf("%#v", this.DeadNode)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -646,6 +801,18 @@ func (this *ResponseFromCache) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *LostConnectionCoordinator) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&message.LostConnectionCoordinator{")
+	if this.Coordinator != nil {
+		s = append(s, "Coordinator: "+fmt.Sprintf("%#v", this.Coordinator)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringProtos(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -669,6 +836,24 @@ func (m *Hello) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Latency != 0 {
+		dAtA[i] = 0xd
+		i++
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Latency))))
+		i += 4
+	}
+	if m.ComputationCapability != 0 {
+		dAtA[i] = 0x15
+		i++
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputationCapability))))
+		i += 4
+	}
+	if m.Queue != 0 {
+		dAtA[i] = 0x1d
+		i++
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Queue))))
+		i += 4
+	}
 	return i, nil
 }
 
@@ -742,15 +927,31 @@ func (m *Welcome) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.Nodes) > 0 {
-		for _, msg := range m.Nodes {
+		for k, _ := range m.Nodes {
 			dAtA[i] = 0xa
 			i++
-			i = encodeVarintProtos(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+			v := m.Nodes[k]
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovProtos(uint64(msgSize))
 			}
-			i += n
+			mapSize := 1 + len(k) + sovProtos(uint64(len(k))) + msgSize
+			i = encodeVarintProtos(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintProtos(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintProtos(dAtA, i, uint64(v.Size()))
+				n1, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n1
+			}
 		}
 	}
 	return i, nil
@@ -775,11 +976,39 @@ func (m *NewNode) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintProtos(dAtA, i, uint64(m.Newnode.Size()))
-		n1, err := m.Newnode.MarshalTo(dAtA[i:])
+		n2, err := m.Newnode.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n2
+	}
+	return i, nil
+}
+
+func (m *DeadNode) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeadNode) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.DeadNode != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintProtos(dAtA, i, uint64(m.DeadNode.Size()))
+		n3, err := m.DeadNode.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
 	}
 	return i, nil
 }
@@ -881,11 +1110,11 @@ func (m *SearchInCache) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintProtos(dAtA, i, uint64(m.FromPeer.Size()))
-		n2, err := m.FromPeer.MarshalTo(dAtA[i:])
+		n4, err := m.FromPeer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n4
 	}
 	return i, nil
 }
@@ -914,6 +1143,34 @@ func (m *ResponseFromCache) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *LostConnectionCoordinator) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LostConnectionCoordinator) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Coordinator != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintProtos(dAtA, i, uint64(m.Coordinator.Size()))
+		n5, err := m.Coordinator.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n5
+	}
+	return i, nil
+}
+
 func encodeVarintProtos(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -926,6 +1183,15 @@ func encodeVarintProtos(dAtA []byte, offset int, v uint64) int {
 func (m *Hello) Size() (n int) {
 	var l int
 	_ = l
+	if m.Latency != 0 {
+		n += 5
+	}
+	if m.ComputationCapability != 0 {
+		n += 5
+	}
+	if m.Queue != 0 {
+		n += 5
+	}
 	return n
 }
 
@@ -951,9 +1217,16 @@ func (m *Welcome) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.Nodes) > 0 {
-		for _, e := range m.Nodes {
-			l = e.Size()
-			n += 1 + l + sovProtos(uint64(l))
+		for k, v := range m.Nodes {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovProtos(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovProtos(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovProtos(uint64(mapEntrySize))
 		}
 	}
 	return n
@@ -964,6 +1237,16 @@ func (m *NewNode) Size() (n int) {
 	_ = l
 	if m.Newnode != nil {
 		l = m.Newnode.Size()
+		n += 1 + l + sovProtos(uint64(l))
+	}
+	return n
+}
+
+func (m *DeadNode) Size() (n int) {
+	var l int
+	_ = l
+	if m.DeadNode != nil {
+		l = m.DeadNode.Size()
 		n += 1 + l + sovProtos(uint64(l))
 	}
 	return n
@@ -1023,6 +1306,16 @@ func (m *ResponseFromCache) Size() (n int) {
 	return n
 }
 
+func (m *LostConnectionCoordinator) Size() (n int) {
+	var l int
+	_ = l
+	if m.Coordinator != nil {
+		l = m.Coordinator.Size()
+		n += 1 + l + sovProtos(uint64(l))
+	}
+	return n
+}
+
 func sovProtos(x uint64) (n int) {
 	for {
 		n++
@@ -1041,6 +1334,9 @@ func (this *Hello) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Hello{`,
+		`Latency:` + fmt.Sprintf("%v", this.Latency) + `,`,
+		`ComputationCapability:` + fmt.Sprintf("%v", this.ComputationCapability) + `,`,
+		`Queue:` + fmt.Sprintf("%v", this.Queue) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1076,8 +1372,18 @@ func (this *Welcome) String() string {
 	if this == nil {
 		return "nil"
 	}
+	keysForNodes := make([]string, 0, len(this.Nodes))
+	for k, _ := range this.Nodes {
+		keysForNodes = append(keysForNodes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	mapStringForNodes := "map[string]*actor.PID{"
+	for _, k := range keysForNodes {
+		mapStringForNodes += fmt.Sprintf("%v: %v,", k, this.Nodes[k])
+	}
+	mapStringForNodes += "}"
 	s := strings.Join([]string{`&Welcome{`,
-		`Nodes:` + strings.Replace(fmt.Sprintf("%v", this.Nodes), "PID", "actor.PID", 1) + `,`,
+		`Nodes:` + mapStringForNodes + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1088,6 +1394,16 @@ func (this *NewNode) String() string {
 	}
 	s := strings.Join([]string{`&NewNode{`,
 		`Newnode:` + strings.Replace(fmt.Sprintf("%v", this.Newnode), "PID", "actor.PID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeadNode) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeadNode{`,
+		`DeadNode:` + strings.Replace(fmt.Sprintf("%v", this.DeadNode), "PID", "actor.PID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1143,6 +1459,16 @@ func (this *ResponseFromCache) String() string {
 	}, "")
 	return s
 }
+func (this *LostConnectionCoordinator) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LostConnectionCoordinator{`,
+		`Coordinator:` + strings.Replace(fmt.Sprintf("%v", this.Coordinator), "PID", "actor.PID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func valueToStringProtos(v interface{}) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1180,6 +1506,39 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: Hello: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 5 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Latency", wireType)
+			}
+			var v uint32
+			if (iNdEx + 4) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			iNdEx += 4
+			m.Latency = float32(math.Float32frombits(v))
+		case 2:
+			if wireType != 5 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ComputationCapability", wireType)
+			}
+			var v uint32
+			if (iNdEx + 4) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			iNdEx += 4
+			m.ComputationCapability = float32(math.Float32frombits(v))
+		case 3:
+			if wireType != 5 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Queue", wireType)
+			}
+			var v uint32
+			if (iNdEx + 4) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			iNdEx += 4
+			m.Queue = float32(math.Float32frombits(v))
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtos(dAtA[iNdEx:])
@@ -1406,10 +1765,102 @@ func (m *Welcome) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Nodes = append(m.Nodes, &actor.PID{})
-			if err := m.Nodes[len(m.Nodes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+			if m.Nodes == nil {
+				m.Nodes = make(map[string]*actor.PID)
 			}
+			var mapkey string
+			var mapvalue *actor.PID
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowProtos
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowProtos
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthProtos
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowProtos
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= (int(b) & 0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthProtos
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if mapmsglen < 0 {
+						return ErrInvalidLengthProtos
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &actor.PID{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipProtos(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthProtos
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Nodes[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1491,6 +1942,89 @@ func (m *NewNode) Unmarshal(dAtA []byte) error {
 				m.Newnode = &actor.PID{}
 			}
 			if err := m.Newnode.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProtos(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthProtos
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeadNode) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProtos
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeadNode: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeadNode: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeadNode", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtos
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProtos
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeadNode == nil {
+				m.DeadNode = &actor.PID{}
+			}
+			if err := m.DeadNode.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1943,6 +2477,89 @@ func (m *ResponseFromCache) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *LostConnectionCoordinator) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProtos
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LostConnectionCoordinator: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LostConnectionCoordinator: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Coordinator", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtos
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthProtos
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Coordinator == nil {
+				m.Coordinator = &actor.PID{}
+			}
+			if err := m.Coordinator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProtos(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthProtos
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipProtos(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2051,28 +2668,37 @@ var (
 func init() { proto.RegisterFile("message/protos.proto", fileDescriptorProtos) }
 
 var fileDescriptorProtos = []byte{
-	// 358 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x51, 0x4f, 0x4b, 0xe3, 0x40,
-	0x14, 0xcf, 0xec, 0xd2, 0xa6, 0x7d, 0xed, 0xee, 0xb2, 0x61, 0x59, 0xca, 0xb2, 0x0c, 0x65, 0x58,
-	0x96, 0x85, 0x76, 0x13, 0x50, 0xf0, 0x5e, 0x95, 0x62, 0x2f, 0xb5, 0x44, 0xc5, 0x73, 0x9a, 0x3e,
-	0xd2, 0xd0, 0x24, 0xaf, 0xce, 0x4c, 0x2d, 0xde, 0xfc, 0x08, 0x7e, 0x0c, 0x3f, 0x8a, 0xc7, 0x1e,
-	0x3d, 0xda, 0x78, 0xf1, 0xd8, 0x8f, 0x20, 0x4d, 0x5a, 0x8b, 0x8a, 0xe8, 0x69, 0xe6, 0xf7, 0x67,
-	0x7e, 0xf3, 0x7b, 0x3c, 0xf8, 0x11, 0xa3, 0x52, 0x5e, 0x80, 0xce, 0x58, 0x92, 0x26, 0x65, 0x67,
-	0x87, 0x65, 0xae, 0xd8, 0x5f, 0x3b, 0x41, 0xa8, 0x87, 0x93, 0xbe, 0xed, 0x53, 0xec, 0xb4, 0xd4,
-	0x45, 0x32, 0x92, 0x94, 0x74, 0x8e, 0x73, 0xb3, 0xe7, 0x6b, 0x92, 0xff, 0x03, 0x72, 0xb2, 0xcb,
-	0xb3, 0x00, 0x61, 0x42, 0xe1, 0x00, 0xa3, 0x88, 0x44, 0x05, 0xca, 0xad, 0x73, 0x2f, 0x8c, 0xbc,
-	0x7e, 0x84, 0xe2, 0x2b, 0x54, 0xbb, 0xa4, 0x37, 0x18, 0xa0, 0xe4, 0x62, 0x10, 0x2a, 0x8d, 0x52,
-	0x34, 0xc0, 0x3c, 0xc5, 0xc8, 0xa7, 0x18, 0xad, 0x3a, 0x14, 0x12, 0x1a, 0xa0, 0xaa, 0xb1, 0xfa,
-	0xe7, 0x7f, 0x95, 0x2d, 0xb0, 0xb3, 0x0f, 0xec, 0x5e, 0x67, 0xdf, 0xcd, 0x05, 0xe1, 0x80, 0xd9,
-	0xc5, 0x69, 0x97, 0x06, 0x68, 0xfd, 0x01, 0x33, 0xc1, 0xe9, 0x92, 0xae, 0xb1, 0x3a, 0x7b, 0x61,
-	0x5f, 0x4b, 0xc2, 0x81, 0x6f, 0x2e, 0x9e, 0x4d, 0x50, 0xe9, 0x36, 0xc9, 0x3d, 0xcf, 0x1f, 0xa2,
-	0xf5, 0x1b, 0xca, 0x87, 0x63, 0x94, 0x9e, 0x0e, 0x29, 0xc9, 0x9e, 0x96, 0xdd, 0x0d, 0x21, 0xc4,
-	0xb2, 0x9a, 0x1a, 0x53, 0xa2, 0xd0, 0xfa, 0x09, 0x45, 0x17, 0xd5, 0x24, 0xd2, 0x2b, 0xdb, 0x0a,
-	0x89, 0x26, 0x54, 0x5b, 0x6a, 0xd4, 0x26, 0x99, 0xe3, 0x77, 0x12, 0x4f, 0xe0, 0xcb, 0x11, 0x7a,
-	0xd2, 0x1f, 0x76, 0x92, 0x0f, 0x14, 0xb0, 0xfe, 0x42, 0xa9, 0x2d, 0x29, 0xee, 0x21, 0xca, 0xda,
-	0xa7, 0x57, 0x83, 0x3d, 0x69, 0xa2, 0x01, 0xdf, 0xd7, 0x45, 0x97, 0x5c, 0x1e, 0xfd, 0x46, 0xe3,
-	0xdd, 0xe6, 0x6c, 0xce, 0x8d, 0xdb, 0x39, 0x37, 0x16, 0x73, 0xce, 0x2e, 0x53, 0xce, 0xae, 0x53,
-	0xce, 0x6e, 0x52, 0xce, 0x66, 0x29, 0x67, 0x77, 0x29, 0x67, 0x0f, 0x29, 0x37, 0x16, 0x29, 0x67,
-	0x57, 0xf7, 0xdc, 0xe8, 0x17, 0xb3, 0x5d, 0x6e, 0x3f, 0x06, 0x00, 0x00, 0xff, 0xff, 0x16, 0xf7,
-	0xe5, 0xca, 0x24, 0x02, 0x00, 0x00,
+	// 498 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x5d, 0x6b, 0x13, 0x41,
+	0x14, 0xcd, 0xb4, 0xa4, 0x69, 0x6e, 0xea, 0xd7, 0x50, 0x25, 0x56, 0x19, 0xc2, 0x20, 0x52, 0x30,
+	0x6e, 0x30, 0x8a, 0x88, 0x6f, 0x31, 0x31, 0x18, 0x28, 0xb1, 0xae, 0x8a, 0xcf, 0x93, 0xcd, 0x25,
+	0x59, 0xb2, 0x3b, 0x13, 0x67, 0x66, 0x5b, 0xf2, 0x26, 0xfe, 0x02, 0x7f, 0x86, 0x3f, 0xc5, 0xc7,
+	0x3e, 0xfa, 0x68, 0xd6, 0x17, 0x1f, 0xfb, 0x13, 0x64, 0x67, 0x37, 0x8d, 0x85, 0x88, 0x3e, 0xed,
+	0x3d, 0xf7, 0x9c, 0x7b, 0xb8, 0xf7, 0xb0, 0x03, 0xfb, 0x31, 0x1a, 0x23, 0x26, 0xd8, 0x9a, 0x6b,
+	0x65, 0x95, 0xf1, 0xdc, 0x87, 0x56, 0x8a, 0xee, 0xc1, 0xd3, 0x49, 0x68, 0xa7, 0xc9, 0xc8, 0x0b,
+	0x54, 0xdc, 0xea, 0x98, 0x85, 0x9c, 0x69, 0x25, 0x07, 0xef, 0x72, 0xb1, 0x08, 0xac, 0xd2, 0x0f,
+	0x27, 0xaa, 0xe5, 0x8a, 0x4b, 0x06, 0x3c, 0x86, 0xf2, 0x2b, 0x8c, 0x22, 0x45, 0xeb, 0x50, 0x39,
+	0x12, 0x16, 0x65, 0xb0, 0xa8, 0x93, 0x06, 0x39, 0xdc, 0xf2, 0x57, 0x90, 0x3e, 0x81, 0x9b, 0x5d,
+	0x15, 0xcf, 0x13, 0x2b, 0x6c, 0xa8, 0x64, 0x57, 0xcc, 0xc5, 0x28, 0x8c, 0x42, 0xbb, 0xa8, 0x6f,
+	0x39, 0xdd, 0x66, 0x92, 0xee, 0x43, 0xf9, 0x4d, 0x82, 0x09, 0xd6, 0xb7, 0x9d, 0x2a, 0x07, 0xbc,
+	0x06, 0xd5, 0xce, 0x89, 0x08, 0x23, 0x31, 0x8a, 0x90, 0x5f, 0x85, 0xbd, 0xa1, 0xb2, 0x6b, 0x0c,
+	0xb0, 0xeb, 0xe3, 0x24, 0x34, 0x16, 0x35, 0xff, 0x4c, 0xa0, 0xf2, 0x01, 0xa3, 0x40, 0xc5, 0x48,
+	0x1f, 0x41, 0x59, 0xaa, 0x31, 0x9a, 0x3a, 0x69, 0x6c, 0x1f, 0xd6, 0xda, 0x77, 0xbc, 0xe2, 0x68,
+	0xaf, 0x10, 0x78, 0xc3, 0x8c, 0x7d, 0x29, 0xad, 0x5e, 0xf8, 0xb9, 0xf2, 0xa0, 0x07, 0xb0, 0x6e,
+	0xd2, 0xeb, 0xb0, 0x3d, 0xc3, 0xfc, 0xae, 0xaa, 0x9f, 0x95, 0xb4, 0x01, 0xe5, 0x13, 0x11, 0x25,
+	0xe8, 0x6e, 0xa8, 0xb5, 0xc1, 0x73, 0xd1, 0x78, 0xc7, 0x83, 0x9e, 0x9f, 0x13, 0xcf, 0xb7, 0x9e,
+	0x11, 0xde, 0x82, 0xca, 0x10, 0x4f, 0x33, 0x23, 0x7a, 0x0f, 0x2a, 0x12, 0x4f, 0x33, 0x73, 0x67,
+	0x73, 0x79, 0x64, 0x45, 0xf1, 0x36, 0xec, 0xf6, 0x50, 0x8c, 0xdd, 0xc4, 0x7d, 0xd8, 0x1d, 0x17,
+	0xf5, 0x86, 0x91, 0x0b, 0x8e, 0xb7, 0xe0, 0x9a, 0x8f, 0x1f, 0x13, 0x34, 0xb6, 0xaf, 0x74, 0x57,
+	0x04, 0x53, 0xa4, 0x77, 0xa1, 0xfa, 0x7a, 0x8e, 0xda, 0x45, 0x5a, 0x6c, 0xbd, 0x6e, 0x70, 0x9e,
+	0xc5, 0x64, 0xe6, 0x4a, 0x1a, 0xa4, 0xb7, 0x60, 0xc7, 0x47, 0x93, 0x44, 0xb6, 0x90, 0x15, 0x88,
+	0x37, 0x61, 0xaf, 0x63, 0x66, 0x7d, 0xa5, 0x73, 0xfc, 0x0f, 0xc7, 0xf7, 0x70, 0xe5, 0x2d, 0x0a,
+	0x1d, 0x4c, 0x07, 0xf2, 0x3f, 0x16, 0xc8, 0x2e, 0xeb, 0x6b, 0x15, 0x1f, 0x23, 0xea, 0x0d, 0xf9,
+	0x5d, 0x70, 0xfc, 0x01, 0xdc, 0x58, 0x2d, 0x9a, 0xf5, 0x72, 0xeb, 0xbf, 0x6d, 0x3c, 0x80, 0xdb,
+	0x47, 0xca, 0xd8, 0xae, 0x92, 0x12, 0x03, 0xf7, 0x2f, 0x29, 0xa5, 0xc7, 0xa1, 0x14, 0x56, 0x69,
+	0xda, 0x84, 0x5a, 0xb0, 0x86, 0x1b, 0xe2, 0xfc, 0x93, 0x7e, 0xd1, 0x3c, 0x5b, 0xb2, 0xd2, 0xf7,
+	0x25, 0x2b, 0x9d, 0x2f, 0x19, 0xf9, 0x94, 0x32, 0xf2, 0x35, 0x65, 0xe4, 0x5b, 0xca, 0xc8, 0x59,
+	0xca, 0xc8, 0x8f, 0x94, 0x91, 0x5f, 0x29, 0x2b, 0x9d, 0xa7, 0x8c, 0x7c, 0xf9, 0xc9, 0x4a, 0xa3,
+	0x1d, 0xf7, 0x10, 0x1e, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xcd, 0xfb, 0x00, 0x7d, 0x61, 0x03,
+	0x00, 0x00,
 }

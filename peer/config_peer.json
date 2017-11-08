@@ -1,13 +1,20 @@
 {
   "myself" : {
     "id" : "peer",
-    "address" : "127.0.0.1:8085"
+    "address" : "127.0.0.1:8084",
+    "latency" : 100.0,
+    "computationcapability" : 50.0,
+    "queue" : 12.0
   },
   "coordinators" :
       [
         {
           "id" : "coordinator",
           "address" : "127.0.0.1:8081"
+        },
+        {
+          "id" : "coordinator",
+          "address" : "127.0.0.1:8082"
         }
       ]
 }

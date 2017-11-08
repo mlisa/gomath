@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/mlisa/gomath/message"
@@ -26,7 +25,7 @@ func (controller *Controller) AskForResult(operation string) {
 		controller.Gui.Update(func(g *gocui.Gui) error {
 			output, _ := g.View("Log")
 			output.Clear()
-			fmt.Fprint(output, "Sent AskForResult message to peer")
+			fmt.Fprintln(output, "Sent AskForResult message to peer")
 			return nil
 		})
 	} else {
@@ -38,7 +37,12 @@ func (controller *Controller) AskForResult(operation string) {
 				fmt.Fprint(output, result)
 				return nil
 			})
-			log.Println("[CONTROLLER] Saved result :" + strconv.Itoa(result.(int)))
+			controller.Gui.Update(func(g *gocui.Gui) error {
+				output, _ := g.View("Log")
+				output.Clear()
+				fmt.Fprintln(output, "Operation computed offline")
+				return nil
+			})
 			controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
 		}
 	}
@@ -47,27 +51,30 @@ func (controller *Controller) AskForResult(operation string) {
 func (controller *Controller) SearchInCache(operation string) string {
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Log")
-		fmt.Fprint(output, "Received SearchInCache message from peer")
+		fmt.Fprintln(output, "Received SearchInCache message from peer")
 		return nil
 	})
 
 	if result, err := controller.Cache.retrieveResult(operation); err == nil {
-		log.Println("Retrieved result " + result + " from cache")
+		controller.Gui.Update(func(g *gocui.Gui) error {
+			output, _ := g.View("Log")
+			fmt.Fprintln(output, "Retrieved result from local cache")
+			return nil
+		})
 		return result
 	}
 	return ""
 }
 
 func (controller *Controller) SetResult(result string) {
-	log.Println("Received result " + result)
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Output")
-		fmt.Fprint(output, result)
+		fmt.Fprintln(output, result)
 		return nil
 	})
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Log")
-		fmt.Fprint(output, "Receive Response message from peer")
+		fmt.Fprintln(output, "Receive Response message from peer")
 		return nil
 	})
 }

@@ -1,7 +1,10 @@
 {
   "myself" : {
           "id" : "coordinator",
-          "address" : "127.0.0.1:8081"
+          "address" : "127.0.0.1:8081",
+          "latency" : 100.0,
+          "computationcapability" : 50.0,
+          "queue" : 12.0
   }
 }
 
