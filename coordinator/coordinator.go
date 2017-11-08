@@ -16,13 +16,14 @@ type Coordinator struct {
 func (coordinator *Coordinator) Receive(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *message.Hello:
-		log.Println("[COORDINATOR] message \"Hello\" from peer " + context.Sender().Id)
+		// Coordinator received an 'Hello' message from a want which want to join the region, check availability
 		if len(coordinator.Peers) < coordinator.MaxPeers {
 			context.Sender().Request(&message.Available{}, context.Self())
 		} else {
 			context.Sender().Request(&message.NotAvailable{}, context.Self())
 		}
 	case *message.Register:
+		// Peer wants to be registered in the region, update the nodes
 		log.Println("[COORDINATOR] Sending {{region}} nodes to " + context.Sender().Id + " " + context.Sender().Address)
 		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
 		// update all others peers newnode
@@ -36,6 +37,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *actor.Stopped:
 		log.Println("[COORDINATOR] Stopped, actor and it's children are stopped")
 	case *actor.Terminated:
+		// Watch for terminated peers of the region
 		log.Println(msg)
 	}
 }

@@ -19,23 +19,27 @@ type Config struct {
 	Coordinators []*actor.PID
 }
 
-func GetFileConfig(path string) Config {
-	absPath, _ := filepath.Abs(filepath.Clean(path))
+func GetFileConfig(path string) (Config, error) {
+	fileAbs, _ := filepath.Abs(path)
 	configuration := Config{}
-	file, err := os.Open(absPath)
-	if err != nil {
-		log.Println("[ERROR] " + err.Error())
+	if _, err := os.Stat(fileAbs); !os.IsNotExist(err) {
+		file, err := os.Open(fileAbs)
+		if err != nil {
+			return configuration, err
+		}
+		defer file.Close()
+		if err = json.NewDecoder(file).Decode(&configuration); err != nil {
+			return configuration, err
+		}
+		return configuration, nil
+	} else {
+		return configuration, err
 	}
-	defer file.Close()
-	if err = json.NewDecoder(file).Decode(&configuration); err != nil {
-		log.Fatalln("[ERROR] " + err.Error())
-	}
-	return configuration
 }
 
 func GetConfig(who string) Config {
 	fileName := "config_" + who + ".json"
-	absPath, _ := filepath.Abs(filepath.Clean(fileName))
+	absPath, _ := filepath.Abs(fileName)
 	configuration := Config{}
 	file, err := os.Open(absPath)
 	if err != nil {
