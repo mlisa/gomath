@@ -69,6 +69,7 @@ func layout(g *gocui.Gui) error {
 		}
 		v.Wrap = true
 		v.Title = "Output"
+
 	}
 
 	if v, err := g.SetView("Log", 0, maxY/3*2, maxX-1, maxY-1); err != nil {
