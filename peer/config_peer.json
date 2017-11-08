@@ -11,10 +11,6 @@
         {
           "id" : "coordinator",
           "address" : "127.0.0.1:8081"
-        },
-        {
-          "id" : "coordinator",
-          "address" : "127.0.0.1:8082"
         }
       ]
 }

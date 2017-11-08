@@ -34,7 +34,6 @@ func (peer *Peer) Receive(context actor.Context) {
 				log.Println("[PEER] Removing dead coordinator..")
 				coordinators = append(coordinators[:i], coordinators[i+1:]...)
 			} else {
-				log.Println("[PEER] Try to reconnect to " + PID.Address + " " + PID.Id)
 				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
 				tempCoordinator.Request(&message.Hello{peer.Config.Myself.Latency, peer.Config.Myself.ComputationCapability, peer.Config.Myself.Queue}, context.Self())
 			}
@@ -42,7 +41,7 @@ func (peer *Peer) Receive(context actor.Context) {
 	case *message.Available:
 		peer.coordinator = context.Sender()
 		context.Watch(peer.coordinator)
-		log.Println("[PEER] Found a coordinator! " + peer.coordinator.Address + peer.coordinator.Id)
+		peer.Controller.Log(FOUNDNEWCOORDINATOR)
 		//TODO: requestfuture se no poi si pianta
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
@@ -71,7 +70,7 @@ func (peer *Peer) Connected(context actor.Context) {
 func (peer *Peer) Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *actor.Terminated:
-		log.Println("[PEER] Lost Connection from coordinator " + msg.Who.Address + msg.Who.Id)
+		peer.Controller.Log(LOSTCONNECTION)
 		context.SetBehavior(peer.Receive)
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 	case *message.AskForResult:
@@ -82,9 +81,11 @@ func (peer *Peer) Operative(context actor.Context) {
 			peer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		}
 	case *message.NewNode:
-		peer.otherNodes[msg.Newnode.Address+msg.Newnode.Id] = msg.Newnode
+		peer.Controller.Log(NEWNODE)
+		peer.otherNodes[msg.Newnode.String()] = msg.Newnode
 	case *message.DeadNode:
-		delete(peer.otherNodes, msg.DeadNode.Address+msg.DeadNode.Id)
+		peer.Controller.Log(DEADNODE)
+		delete(peer.otherNodes, msg.DeadNode.String())
 		//peer.otherNodes = append(peer.otherNodes, msg.DeadNode)
 	case *message.RequestForCache:
 		log.Println("[PEER] Received RequestForCache")
