@@ -10,7 +10,7 @@ import (
 
 type Coordinator struct {
 	MaxPeers int
-	Peers    []*actor.PID
+	Peers    map[string]*actor.PID
 }
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
@@ -31,7 +31,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.NewNode{context.Sender()}, context.Self())
 		}
 		context.Watch(context.Sender())
-		coordinator.Peers = append(coordinator.Peers, context.Sender())
+		coordinator.Peers[context.Sender().String()] = context.Sender()
 	case *actor.Stopping:
 		log.Println("[COORDINATOR] Stopping, actor is about shut down")
 	case *actor.Stopped:

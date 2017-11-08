@@ -25,7 +25,7 @@ func main() {
 	}
 	remote.Start(configCoordinator.Myself.Address)
 
-	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make([]*actor.PID, 0, *maxpeer)})
+	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID)})
 	_, err = actor.SpawnNamed(props, configCoordinator.Myself.Id)
 	if err != nil {
 		log.Panicln(err)
