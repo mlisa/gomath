@@ -74,10 +74,8 @@ func (peer *Peer) Operative(context actor.Context) {
 		context.SetBehavior(peer.Receive)
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 	case *message.AskForResult:
-		log.Println("[PEER] Sending RequestForCache")
 		log.Println(peer.otherNodes)
 		for _, peer := range peer.otherNodes {
-			log.Println("[PEER] Sending RequestForCache to" + peer.Id + peer.Address)
 			peer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		}
 	case *message.NewNode:
@@ -88,14 +86,13 @@ func (peer *Peer) Operative(context actor.Context) {
 		delete(peer.otherNodes, msg.DeadNode.String())
 		//peer.otherNodes = append(peer.otherNodes, msg.DeadNode)
 	case *message.RequestForCache:
-		log.Println("[PEER] Received RequestForCache")
 		res := peer.Controller.SearchInCache(msg.Operation)
 		if res != "" {
 			context.Sender().Request(&message.Response{Result: res}, context.Self())
 		}
 	case *message.Response:
-		log.Println("[PEER] Received Response from peer!")
-		peer.Controller.SetResult(msg.Result)
+		peer.Controller.Log(RECEIVEDRESPONSE)
+		peer.Controller.SetOutput(msg.Result, nil)
 	case *actor.Stopping:
 		log.Println("[PEER] Stopping, actor is about shut down")
 	case *actor.Stopped:

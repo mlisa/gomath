@@ -33,19 +33,14 @@ const (
 )
 
 func (controller *Controller) AskForResult(operation string) {
-	var something = true
+	var something = false
 	if something {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Log(ASKFORRESULT)
 	} else {
 		result, err := parser.ParseReader("", bytes.NewBufferString(operation))
+		controller.SetOutput(result, err)
 		if err == nil {
-			controller.Gui.Update(func(g *gocui.Gui) error {
-				output, _ := g.View("Output")
-				output.Clear()
-				fmt.Fprint(output, result)
-				return nil
-			})
 			controller.Log(OFFLINECOMPUTATION)
 			controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
 		}
@@ -54,7 +49,6 @@ func (controller *Controller) AskForResult(operation string) {
 
 func (controller *Controller) SearchInCache(operation string) string {
 	controller.Log(SEARCHINCACHE)
-
 	if result, err := controller.Cache.retrieveResult(operation); err == nil {
 		controller.Log(FOUNDRESULTINCACHE)
 		return result
@@ -62,13 +56,19 @@ func (controller *Controller) SearchInCache(operation string) string {
 	return ""
 }
 
-func (controller *Controller) SetResult(result string) {
+func (controller *Controller) SetOutput(result interface{}, err error) {
+	outputString := ""
+	if err != nil {
+		outputString = "[ERROR] Wrong input format"
+	} else {
+		outputString = strconv.Itoa(result.(int))
+	}
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Output")
-		fmt.Fprintln(output, result)
+		output.Clear()
+		fmt.Fprintln(output, outputString)
 		return nil
 	})
-	controller.Log(RECEIVEDRESPONSE)
 }
 
 func (controller *Controller) Log(eventType EventType) {
