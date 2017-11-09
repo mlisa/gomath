@@ -33,7 +33,7 @@ const (
 )
 
 func (controller *Controller) AskForResult(operation string) {
-	var something = false
+	var something = true
 	if something {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Log(ASKFORRESULT)
@@ -61,7 +61,7 @@ func (controller *Controller) SetOutput(result interface{}, err error) {
 	if err != nil {
 		outputString = "[ERROR] Wrong input format"
 	} else {
-		outputString = strconv.Itoa(result.(int))
+		outputString = result.(string)
 	}
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Output")
@@ -71,62 +71,41 @@ func (controller *Controller) SetOutput(result interface{}, err error) {
 	})
 }
 
+func (controller *Controller) setLog(log string) {
+	controller.Gui.Update(func(g *gocui.Gui) error {
+		output, _ := g.View("Log")
+		fmt.Fprintln(output, log)
+		return nil
+	})
+}
 func (controller *Controller) Log(eventType EventType) {
 	switch eventType {
 	case NEWNODE:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "New node entered in region")
-			return nil
-		})
+		controller.setLog("New node entered in region")
+
 	case DEADNODE:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "One node of the region died")
-			return nil
-		})
+		controller.setLog("One node of the region died")
+
 	case LOSTCONNECTION:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Lost connection from coordinator")
-			return nil
-		})
+		controller.setLog("Lost connection from coordinator")
+
 	case FOUNDNEWCOORDINATOR:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Found new coordinator.")
-			return nil
-		})
+		controller.setLog("Found new coordinator.")
+
 	case ASKFORRESULT:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Sent AskForResult message to peers")
-			return nil
-		})
+		controller.setLog("Sent AskForResult message to peers")
+
 	case SEARCHINCACHE:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Received SearchInCache message from peer")
-			return nil
-		})
+		controller.setLog("Received SearchInCache message from peer")
+
 	case RECEIVEDRESPONSE:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Receive Response message from peer")
-			return nil
-		})
+		controller.setLog("Received Response message from peer")
+
 	case FOUNDRESULTINCACHE:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Retrieved result from local cache")
-			return nil
-		})
+		controller.setLog("Retrieved result from local cache")
+
 	case OFFLINECOMPUTATION:
-		controller.Gui.Update(func(g *gocui.Gui) error {
-			output, _ := g.View("Log")
-			fmt.Fprintln(output, "Operation computed offline")
-			return nil
-		})
+		controller.setLog("Operation computed offline")
 
 	}
 }
