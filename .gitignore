@@ -14,11 +14,3 @@ log.txt
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 .idea
-
-src/*
-!src/com/
-
-bin/
-pkg/
-
-requirements.txt
