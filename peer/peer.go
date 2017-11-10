@@ -20,21 +20,27 @@ type Peer struct {
 func (peer *Peer) Receive(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *actor.Started:
-		coordinators := peer.Config.Coordinators //lettura da file config
-		for _, PID := range coordinators {
-			log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
-			tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-			tempCoordinator.Request(&message.Hello{}, context.Self())
+		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
+		if err == nil {
+			log.Println(coordinators)
+			for _, PID := range coordinators {
+				log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
+				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+				tempCoordinator.Request(&message.Hello{}, context.Self())
+			}
 		}
 
 	case *message.LostConnectionCoordinator:
-		for i, PID := range peer.Config.Coordinators {
-			if PID.Address == msg.Coordinator.Address {
-				log.Println("[PEER] Removing dead coordinator..")
-				peer.Config.Coordinators = append(peer.Config.Coordinators[:i], peer.Config.Coordinators[i+1:]...)
-			} else {
-				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-				tempCoordinator.Request(&message.Hello{peer.Config.Myself.Latency, peer.Config.Myself.ComputationCapability, peer.Config.Myself.Queue}, context.Self())
+		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
+		if err == nil {
+			for i, PID := range coordinators {
+				if PID.Address == msg.Coordinator.Address {
+					log.Println("[PEER] Removing dead coordinator..")
+					peer.Config.Coordinators = append(peer.Config.Coordinators[:i], peer.Config.Coordinators[i+1:]...)
+				} else {
+					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+					tempCoordinator.Request(&message.Hello{peer.Config.Myself.Latency, peer.Config.Myself.ComputationCapability, peer.Config.Myself.Queue}, context.Self())
+				}
 			}
 		}
 
@@ -99,9 +105,9 @@ func (peer *Peer) Operative(context actor.Context) {
 		peer.Controller.setLog("Received RequestForCache message from peer" + context.Sender().String())
 		res := peer.Controller.SearchInCache(msg.Operation)
 		if res != "" {
-			context.Sender().Tell(&message.Response{Result: res})
+			context.Respond(&message.Response{Result: res})
 		} else {
-			context.Sender().Tell(&message.NotFound{msg.Operation})
+			context.Respond(&message.NotFound{msg.Operation})
 		}
 
 	case *actor.Stopping:
