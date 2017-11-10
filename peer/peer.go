@@ -115,16 +115,18 @@ func (peer *Peer) Operative(context actor.Context) {
 func (peer *Peer) WaitingForResponse(context actor.Context) {
 	numResponse := 0
 	switch msg := context.Message().(type) {
+
 	case *message.Response:
 		peer.Controller.Log(RECEIVEDRESPONSE)
 		peer.Controller.SetOutput(msg.Result)
 		context.SetBehavior(peer.Operative)
+
 	case *message.NotFound:
 		numResponse++
 		if numResponse == len(peer.otherNodes) {
 			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		} else if numResponse == len(peer.otherNodes)+1 {
-			//Forza il calcolo in locale
+			peer.Controller.ComputeLocal(msg.Operation)
 			context.SetBehavior(peer.Operative)
 		}
 	}

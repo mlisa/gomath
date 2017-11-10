@@ -38,14 +38,7 @@ func (controller *Controller) AskForResult(operation string) {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Log(ASKFORRESULT)
 	} else {
-		result, err := parser.ParseReader("", bytes.NewBufferString(operation))
-		if err == nil {
-			controller.SetOutput(strconv.Itoa(result.(int)))
-			controller.Log(OFFLINECOMPUTATION)
-			controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
-		} else {
-			controller.SetOutput("[ERROR] Wrong input format")
-		}
+		controller.ComputeLocal(operation)
 	}
 }
 
@@ -74,6 +67,18 @@ func (controller *Controller) setLog(log string) {
 		return nil
 	})
 }
+
+func (controller *Controller) ComputeLocal(operation string) {
+	result, err := parser.ParseReader("", bytes.NewBufferString(operation))
+	if err == nil {
+		controller.SetOutput(strconv.Itoa(result.(int)))
+		controller.Log(OFFLINECOMPUTATION)
+		controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
+	} else {
+		controller.SetOutput("[ERROR] Wrong input format")
+	}
+}
+
 func (controller *Controller) Log(eventType EventType) {
 	switch eventType {
 	case NEWNODE:
