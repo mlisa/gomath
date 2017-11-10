@@ -39,10 +39,12 @@ func (controller *Controller) AskForResult(operation string) {
 		controller.Log(ASKFORRESULT)
 	} else {
 		result, err := parser.ParseReader("", bytes.NewBufferString(operation))
-		controller.SetOutput(result, err)
 		if err == nil {
+			controller.SetOutput(strconv.Itoa(result.(int)))
 			controller.Log(OFFLINECOMPUTATION)
 			controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
+		} else {
+			controller.SetOutput("[ERROR] Wrong input format")
 		}
 	}
 }
@@ -56,13 +58,7 @@ func (controller *Controller) SearchInCache(operation string) string {
 	return ""
 }
 
-func (controller *Controller) SetOutput(result interface{}, err error) {
-	outputString := ""
-	if err != nil {
-		outputString = "[ERROR] Wrong input format"
-	} else {
-		outputString = result.(string)
-	}
+func (controller *Controller) SetOutput(outputString string) {
 	controller.Gui.Update(func(g *gocui.Gui) error {
 		output, _ := g.View("Output")
 		output.Clear()
@@ -96,7 +92,7 @@ func (controller *Controller) Log(eventType EventType) {
 		controller.setLog("Sent AskForResult message to peers")
 
 	case SEARCHINCACHE:
-		controller.setLog("Received SearchInCache message from peer")
+		controller.setLog("Received RequestForCache message from peer")
 
 	case RECEIVEDRESPONSE:
 		controller.setLog("Received Response message from peer")

@@ -60,6 +60,7 @@ func (peer *Peer) Connected(context actor.Context) {
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
+		log.Println(peer.otherNodes)
 		context.SetBehavior(peer.Operative)
 
 	case *actor.Stopping:
@@ -79,11 +80,13 @@ func (peer *Peer) Operative(context actor.Context) {
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 
 	case *message.AskForResult:
-		log.Println(peer.otherNodes)
-		for _, peer := range peer.otherNodes {
-			peer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+		for _, otherPeer := range peer.otherNodes {
+			if otherPeer.Id != context.Self().Id || otherPeer.Address != context.Self().Address {
+				peer.Controller.setLog("Asking to.." + otherPeer.String())
+				otherPeer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+			}
 		}
-
+		context.SetBehavior(peer.WaitingForResponse)
 	case *message.NewNode:
 		peer.Controller.Log(NEWNODE)
 		peer.otherNodes[msg.Newnode.String()] = msg.Newnode
@@ -93,19 +96,36 @@ func (peer *Peer) Operative(context actor.Context) {
 		delete(peer.otherNodes, msg.DeadNode.String())
 
 	case *message.RequestForCache:
+		peer.Controller.setLog("Received RequestForCache message from peer" + context.Sender().String())
 		res := peer.Controller.SearchInCache(msg.Operation)
 		if res != "" {
-			context.Sender().Request(&message.Response{Result: res}, context.Self())
+			context.Sender().Tell(&message.Response{Result: res})
+		} else {
+			context.Sender().Tell(&message.NotFound{msg.Operation})
 		}
-
-	case *message.Response:
-		peer.Controller.Log(RECEIVEDRESPONSE)
-		peer.Controller.SetOutput(msg.Result, nil)
 
 	case *actor.Stopping:
 		log.Println("[PEER] Stopping, actor is about shut down")
 
 	case *actor.Stopped:
 		log.Println("[PEER] Stopped, actor and it's children are stopped")
+	}
+}
+
+func (peer *Peer) WaitingForResponse(context actor.Context) {
+	numResponse := 0
+	switch msg := context.Message().(type) {
+	case *message.Response:
+		peer.Controller.Log(RECEIVEDRESPONSE)
+		peer.Controller.SetOutput(msg.Result)
+		context.SetBehavior(peer.Operative)
+	case *message.NotFound:
+		numResponse++
+		if numResponse == len(peer.otherNodes) {
+			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+		} else if numResponse == len(peer.otherNodes)+1 {
+			//Forza il calcolo in locale
+			context.SetBehavior(peer.Operative)
+		}
 	}
 }

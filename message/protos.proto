@@ -14,6 +14,11 @@ message Available { }
 
 message NotAvailable { }
 
+//Message in response to peer when someone doesnt have the result in cache
+message NotFound {
+	string Operation = 1;
+}
+
 //Message sent from new node to his coordinator after receiving Available msg
 message Register { }
 
