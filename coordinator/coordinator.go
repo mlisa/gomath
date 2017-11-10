@@ -40,7 +40,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		log.Println("[COORDINATOR] Stopped, actor and it's children are stopped")
 	case *actor.Terminated:
 		// Watch for terminated peers of the region
-		log.Printf("[COORDINATOR] detected node failure: '%s'", msg.Who.Id)
+		log.Println("[COORDINATOR] detected node failure: '%s'", msg.Who.Id)
 		if _, present := coordinator.Peers[msg.Who.String()]; present {
 			delete(coordinator.Peers, msg.Who.String())
 		}

@@ -26,7 +26,7 @@ type Coordinators struct {
 }
 
 func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
-	url := "http://172.17.0.2/mirror.json"
+	url := "http://gomath.duckdns.org:8080/mirror.json"
 	client := &http.Client{Timeout: 10 * time.Second}
 	var out []Coordinators
 
@@ -50,7 +50,7 @@ func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
 }
 
 func (c *Controller) PublishCoordinator(token string) {
-	url := "http://172.17.0.2/publish"
+	url := "http://gomath.duckdns.org:8080/publish"
 
 	jsonStr := map[string]string{"token": token}
 	jsonReq, _ := json.Marshal(jsonStr)
