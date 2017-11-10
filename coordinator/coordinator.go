@@ -25,7 +25,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		}
 	case *message.Register:
 		// Peer wants to be registered in the region, update the nodes
-		log.Printf("[COORDINATOR] Added perr '%s' to region", context.Sender().Id)
+		log.Println("[COORDINATOR] Added peer '%s' to region", context.Sender().Id)
 		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
 		// update all others peers newnode
 		for _, PID := range coordinator.Peers {
@@ -43,6 +43,9 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		log.Printf("[COORDINATOR] detected node failure: '%s'", msg.Who.Id)
 		if _, present := coordinator.Peers[msg.Who.String()]; present {
 			delete(coordinator.Peers, msg.Who.String())
+		}
+		for _, PID := range coordinator.Peers {
+			actor.NewPID(PID.Address, PID.Id).Request(&message.DeadNode{msg.Who}, context.Self())
 		}
 	}
 }
