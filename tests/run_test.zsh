@@ -4,9 +4,17 @@
 
 local RUN_PATH=$(dirname $0:A)
 local GOMATH="${GOPATH}/src/github.com/mlisa/gomath"
-local NUM_PEER=4
-local NUM_COOR=2
-local TERMINAL="terminator"
+local NUM_COOR=${1}
+local NUM_PEER=${2}
+
+if [[ $(command -v terminator) ]]; then
+  local TERMINAL="terminator"
+else
+  echo "No terminal found"
+  exit -1
+fi
+
+rm ${RUN_PATH}/config_*.json
 
 function generateCoordinatorConfig {
   local port=$(( 8000 + ${2} ))
@@ -52,11 +60,11 @@ cd ${GOMATH}/coordinator/ && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
 for i in {1..$(( ${NUM_COOR}-1 ))}; do
-  exec ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator1.json" &
+  ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator1.json" &
 done
-exec ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json &> /dev/null" &
+  ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json &> /dev/null" &
 
 for i in {1..$(( ${NUM_PEER}-1 ))}; do
-  exec ${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${i}.json &> /dev/null" &
+  ${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${i}.json &> /dev/null" &
 done
-exec ${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json &> /dev/null"
+${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json &> /dev/null" &
