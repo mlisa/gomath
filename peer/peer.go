@@ -58,6 +58,7 @@ func (peer *Peer) Connected(context actor.Context) {
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
+		delete(peer.otherNodes, context.Self().String())
 		log.Println(peer.otherNodes)
 		context.SetBehavior(peer.Operative)
 
@@ -79,10 +80,9 @@ func (peer *Peer) Operative(context actor.Context) {
 
 	case *message.AskForResult:
 		for _, otherPeer := range peer.otherNodes {
-			if otherPeer.Id != context.Self().Id || otherPeer.Address != context.Self().Address {
-				peer.Controller.setLog("Asking to.." + otherPeer.String())
-				otherPeer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
-			}
+			peer.Controller.setLog("Asking to.." + otherPeer.String())
+			otherPeer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+
 		}
 		context.SetBehavior(peer.WaitingForResponse)
 
@@ -95,11 +95,13 @@ func (peer *Peer) Operative(context actor.Context) {
 		delete(peer.otherNodes, msg.DeadNode.String())
 
 	case *message.RequestForCache:
-		peer.Controller.setLog("Received RequestForCache message from peer" + context.Sender().String())
+		peer.Controller.Log(SEARCHINCACHE)
 		res := peer.Controller.SearchInCache(msg.Operation)
 		if res != "" {
+			peer.Controller.Log(FOUNDRESULTINCACHE)
 			context.Respond(&message.Response{Result: res})
 		} else {
+			peer.Controller.Log(NOTFOUND)
 			context.Respond(&message.NotFound{msg.Operation})
 		}
 
@@ -123,6 +125,7 @@ func (peer *Peer) WaitingForResponse(context actor.Context) {
 	case *message.NotFound:
 		numResponse++
 		if numResponse == len(peer.otherNodes) {
+			peer.Controller.setLog("No peer has the response, asking the coordinator...")
 			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
 		} else if numResponse == len(peer.otherNodes)+1 {
 			peer.Controller.ComputeLocal(msg.Operation)

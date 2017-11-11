@@ -1,6 +1,6 @@
 {
   "myself" : {
-          "id" : "coordinator",
+          "id" : "coordinator1",
           "address" : "127.0.0.1:8081"
   }
 }

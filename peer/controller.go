@@ -38,6 +38,7 @@ const (
 	RECEIVEDRESPONSE
 	OFFLINECOMPUTATION
 	FOUNDRESULTINCACHE
+	NOTFOUND
 )
 
 type Coordinators struct {
@@ -72,7 +73,7 @@ func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
 func (controller *Controller) AskForResult(operation string) {
 	var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
 		strings.Count(operation, "+") + strings.Count(operation, "-")
-	if float32(complexity*100) < controller.Config.Myself.ComputationCapability {
+	if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Log(ASKFORRESULT)
 	} else {
@@ -94,7 +95,6 @@ func (controller *Controller) ComputeLocal(operation string) {
 func (controller *Controller) SearchInCache(operation string) string {
 	controller.Log(SEARCHINCACHE)
 	if result, err := controller.Cache.retrieveResult(operation); err == nil {
-		controller.Log(FOUNDRESULTINCACHE)
 		return result
 	}
 	return ""
@@ -145,6 +145,9 @@ func (controller *Controller) Log(eventType EventType) {
 
 	case OFFLINECOMPUTATION:
 		controller.setLog("Operation computed offline")
+
+	case NOTFOUND:
+		controller.setLog("Operation not present in cache")
 
 	}
 }

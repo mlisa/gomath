@@ -1,0 +1,7 @@
+{
+  "myself" : {
+          "id" : "coordinator2",
+          "address" : "127.0.0.1:8082"
+  }
+}
+
