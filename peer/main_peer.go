@@ -26,10 +26,10 @@ func main() {
 	remote.Start(config.Myself.Address)
 
 	g, _ := gocui.NewGui(gocui.Output256)
-	controller := Controller{Gui: g, Cache: &CacheManager{}}
+	controller := Controller{Gui: g, Cache: &CacheManager{}, Config: config}
 	defer g.Close()
 
-	props := actor.FromInstance(&Peer{Controller: &controller, Config: config})
+	props := actor.FromInstance(&Peer{Controller: &controller})
 	peer, err := actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		println("[PEER] Name already in use")

@@ -8,14 +8,22 @@ import (
 	"github.com/mlisa/gomath/message"
 	"github.com/mlisa/gomath/parser"
 
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/jroimartin/gocui"
+	"github.com/mlisa/gomath/common"
 )
 
 type Controller struct {
-	Gui   *gocui.Gui
-	Peer  *actor.PID
-	Cache *CacheManager
+	Gui    *gocui.Gui
+	Peer   *actor.PID
+	Cache  *CacheManager
+	Config common.Config
 }
 
 type EventType int
@@ -32,13 +40,54 @@ const (
 	FOUNDRESULTINCACHE
 )
 
+type Coordinators struct {
+	Id      string `json:"id"`
+	Address string `json:"address"`
+}
+
+func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
+	url := "http://gomath.duckdns.org:8080/mirror.json"
+	client := &http.Client{Timeout: 10 * time.Second}
+	var out []Coordinators
+
+	r, err := client.Get(url)
+	if err != nil {
+		return out, err
+	}
+	defer r.Body.Close()
+	if r != nil && err == nil {
+		// read []byte{}
+		b, _ := ioutil.ReadAll(r.Body)
+
+		// Due to some presence of unicode chars convert raw JSON to string than parse it
+		// GO strings works with utf-8
+		if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
+			return out, err
+		}
+	}
+	return out, nil
+
+}
+
 func (controller *Controller) AskForResult(operation string) {
-	var something = true
-	if something {
+	var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
+		strings.Count(operation, "+") + strings.Count(operation, "-")
+	if float32(complexity*100) < controller.Config.Myself.ComputationCapability {
 		controller.Peer.Tell(&message.AskForResult{operation})
 		controller.Log(ASKFORRESULT)
 	} else {
 		controller.ComputeLocal(operation)
+	}
+}
+
+func (controller *Controller) ComputeLocal(operation string) {
+	result, err := parser.ParseReader("", bytes.NewBufferString(operation))
+	if err == nil {
+		controller.SetOutput(strconv.Itoa(result.(int)))
+		controller.Log(OFFLINECOMPUTATION)
+		controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
+	} else {
+		controller.SetOutput("[ERROR] Wrong input format")
 	}
 }
 
@@ -66,17 +115,6 @@ func (controller *Controller) setLog(log string) {
 		fmt.Fprintln(output, log)
 		return nil
 	})
-}
-
-func (controller *Controller) ComputeLocal(operation string) {
-	result, err := parser.ParseReader("", bytes.NewBufferString(operation))
-	if err == nil {
-		controller.SetOutput(strconv.Itoa(result.(int)))
-		controller.Log(OFFLINECOMPUTATION)
-		controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
-	} else {
-		controller.SetOutput("[ERROR] Wrong input format")
-	}
 }
 
 func (controller *Controller) Log(eventType EventType) {

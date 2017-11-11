@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mlisa/gomath/common"
 	"github.com/mlisa/gomath/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -14,11 +13,10 @@ type Peer struct {
 	otherNodes  map[string]*actor.PID
 	coordinator *actor.PID
 	Controller  *Controller
-	Config      common.Config
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-	switch msg := context.Message().(type) {
+	switch context.Message().(type) {
 	case *actor.Started:
 		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
 		if err == nil {
@@ -33,14 +31,9 @@ func (peer *Peer) Receive(context actor.Context) {
 	case *message.LostConnectionCoordinator:
 		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
 		if err == nil {
-			for i, PID := range coordinators {
-				if PID.Address == msg.Coordinator.Address {
-					log.Println("[PEER] Removing dead coordinator..")
-					peer.Config.Coordinators = append(peer.Config.Coordinators[:i], peer.Config.Coordinators[i+1:]...)
-				} else {
-					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-					tempCoordinator.Request(&message.Hello{peer.Config.Myself.Latency, peer.Config.Myself.ComputationCapability, peer.Config.Myself.Queue}, context.Self())
-				}
+			for _, PID := range coordinators {
+				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+				tempCoordinator.Request(&message.Hello{peer.Controller.Config.Myself.Latency, peer.Controller.Config.Myself.ComputationCapability, peer.Controller.Config.Myself.Queue}, context.Self())
 			}
 		}
 
@@ -48,7 +41,6 @@ func (peer *Peer) Receive(context actor.Context) {
 		peer.coordinator = context.Sender()
 		context.Watch(peer.coordinator)
 		peer.Controller.Log(FOUNDNEWCOORDINATOR)
-		//TODO: requestfuture se no poi si pianta
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 
@@ -93,6 +85,7 @@ func (peer *Peer) Operative(context actor.Context) {
 			}
 		}
 		context.SetBehavior(peer.WaitingForResponse)
+
 	case *message.NewNode:
 		peer.Controller.Log(NEWNODE)
 		peer.otherNodes[msg.Newnode.String()] = msg.Newnode
