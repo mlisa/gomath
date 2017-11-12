@@ -31,8 +31,8 @@ cat << EOF > config_coordinator${1}.json
 EOF
 }
 
+echo "[i] Generating new coordinator configs"
 for i in {1..${NUM_COOR}}; do
-  echo "[i] Generating new coordinator configs"
   generateCoordinatorConfig ${i} ${i}
 done
 
@@ -51,18 +51,18 @@ cat << EOF > config_peer${1}.json
 EOF
 }
 
+echo "[i] Generating new peer configs"
 for i in {1..${NUM_PEER}}; do
-  echo "[i] Generating new peer configs"
   generatePeerConfig ${i} ${i}
 done
 
 echo "[i] Compiling..."
 cd ${GOMATH}/peer/ && \
-  go build -x -i -o peer *.go && \
+  go build -i -o peer *.go && \
   mv ${GOMATH}/peer/peer ${GOPATH}/bin/peer
 
 cd ${GOMATH}/coordinator/ && \
-  go build -x -i -o coordinator *.go && \
+  go build -i -o coordinator *.go && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
 for i in {1..$(( ${NUM_COOR}-1 ))}; do
@@ -72,7 +72,7 @@ done
 echo "[i] Coordinators running"
 
 for i in {1..$(( ${NUM_PEER}-1 ))}; do
-  ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json &> /dev/null"
+  ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json"
 done
-${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json &> /dev/null"
-echo "[i] Peer running"
+${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json"
+echo "[i] Peers running"
