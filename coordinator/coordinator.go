@@ -12,7 +12,7 @@ import (
 type Coordinator struct {
 	MaxPeers     int
 	Peers        map[string]*actor.PID
-	Coordinators []Coordinators
+	Coordinators map[string]*actor.PID
 }
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
@@ -50,22 +50,36 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.RequestForCache:
 		// Received a request from an another coordinator to forward to each peer
 		log.Printf("[COORDINATOR] Request for '%s' from '%s'", msg.Operation, context.Sender().Id)
-		for _, PID := range coordinator.Peers {
-			go func() {
-				if r, e := actor.NewPID(PID.Address, PID.Id).RequestFuture(&message.RequestForCache{msg.Operation}, 5*time.Second).Result(); e != nil {
-					context.Sender().Request(r.(*message.Response), context.Self())
-				}
-			}()
-		}
+		response := coordinator.sendToAll(context.Self(), coordinator.Coordinators, &message.RequestForCacheExternal{msg.Operation})
+		context.Sender().Request(response.(*message.Response), context.Self())
 	case *message.RequestForCacheExternal:
 		// Received a request from a peer to forward to each known coordinator
-		log.Printf("[COORDINATOR] Rquesto for '%s' from '%s'", msg.Operation, context.Sender().Id)
-		for _, PID := range coordinator.Coordinators {
+		log.Printf("[COORDINATOR] Request for '%s' from '%s'", msg.Operation, context.Sender().Id)
+		response := coordinator.sendToAll(context.Self(), coordinator.Peers, &message.RequestForCache{msg.Operation})
+		context.Sender().Request(response.(*message.Response), context.Self())
+	}
+}
+
+func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
+	// Channel to stop all goroutines
+	shutdown := make(chan struct{})
+	response := make(chan interface{})
+	for _, PID := range who {
+		if PID.Address != from.Address {
 			go func() {
-				if r, e := actor.NewPID(PID.Address, PID.Id).RequestFuture(&message.RequestForCache{msg.Operation}, 5*time.Second).Result(); e != nil {
-					context.Sender().Request(r.(*message.Response), context.Self())
+				select {
+				default:
+					req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second)
+					if r, err := req.Result(); err == nil {
+						response <- r
+						close(shutdown)
+					}
+				case <-shutdown:
+					return
 				}
 			}()
 		}
 	}
+	val := <-response
+	return val
 }
