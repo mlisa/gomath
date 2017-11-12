@@ -5,12 +5,5 @@
     "latency" : 100.0,
     "computationcapability" : 1.0,
     "queue" : 12.0
-  },
-  "coordinators" :
-      [
-        {
-          "id" : "coordinator",
-          "address" : "127.0.0.1:8081"
-        }
-      ]
+  }
 }

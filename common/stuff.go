@@ -71,7 +71,7 @@ func GetCoordinatorsList() (map[string]*actor.PID, error) {
 		}
 	}
 	for i := range list {
-		coordinators[list[i].Id] = actor.NewPID(list[i].Id, list[i].Address)
+		coordinators[list[i].Id] = actor.NewPID(list[i].Address, list[i].Id)
 	}
 	return coordinators, nil
 }
