@@ -58,11 +58,11 @@ done
 
 echo "[i] Compiling..."
 cd ${GOMATH}/peer/ && \
-  go build -o peer *.go && \
+  go build -x -i -o peer *.go && \
   mv ${GOMATH}/peer/peer ${GOPATH}/bin/peer
 
 cd ${GOMATH}/coordinator/ && \
-  go build -o coordinator *.go && \
+  go build -x -i -o coordinator *.go && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
 for i in {1..$(( ${NUM_COOR}-1 ))}; do
