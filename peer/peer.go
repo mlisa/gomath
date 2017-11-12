@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/mlisa/gomath/common"
 	"github.com/mlisa/gomath/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -18,7 +19,7 @@ type Peer struct {
 func (peer *Peer) Receive(context actor.Context) {
 	switch context.Message().(type) {
 	case *actor.Started:
-		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
+		coordinators, err := common.GetCoordinatorsList() //lettura da file config
 		if err == nil {
 			log.Println(coordinators)
 			for _, PID := range coordinators {
@@ -29,7 +30,7 @@ func (peer *Peer) Receive(context actor.Context) {
 		}
 
 	case *message.LostConnectionCoordinator:
-		coordinators, err := peer.Controller.getCoordinatorsList() //lettura da file config
+		coordinators, err := common.GetCoordinatorsList() //lettura da file config
 		if err == nil {
 			for _, PID := range coordinators {
 				tempCoordinator := actor.NewPID(PID.Address, PID.Id)

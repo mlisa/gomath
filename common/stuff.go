@@ -2,9 +2,12 @@ package common
 
 import (
 	"encoding/json"
-	"log"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
@@ -20,6 +23,11 @@ type Node struct {
 type Config struct {
 	Myself       Node
 	Coordinators []*actor.PID
+}
+
+type jsonParse struct {
+	Id      string `json:"id"`
+	Address string `json:"address"`
 }
 
 func GetFileConfig(path string) (Config, error) {
@@ -41,17 +49,29 @@ func GetFileConfig(path string) (Config, error) {
 	}
 }
 
-func GetConfig(who string) Config {
-	fileName := "config_" + who + ".json"
-	absPath, _ := filepath.Abs(fileName)
-	configuration := Config{}
-	file, err := os.Open(absPath)
+func GetCoordinatorsList() (map[string]*actor.PID, error) {
+	url := "http://gomath.duckdns.org:8080/mirror.json"
+	client := &http.Client{Timeout: 10 * time.Second}
+	var list []jsonParse
+	coordinators := make(map[string]*actor.PID, len(list))
+
+	r, err := client.Get(url)
 	if err != nil {
-		log.Println("[ERROR] " + err.Error())
+		return coordinators, err
 	}
-	defer file.Close()
-	if err = json.NewDecoder(file).Decode(&configuration); err != nil {
-		log.Fatalln("[ERROR] " + err.Error())
+	defer r.Body.Close()
+	if r != nil && err == nil {
+		// read []byte{}
+		b, _ := ioutil.ReadAll(r.Body)
+
+		// Due to some presence of unicode chars convert raw JSON to string than parse it
+		// GO strings works with utf-8
+		if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&list); err != nil {
+			return coordinators, err
+		}
 	}
-	return configuration
+	for i := range list {
+		coordinators[list[i].Id] = actor.NewPID(list[i].Id, list[i].Address)
+	}
+	return coordinators, nil
 }

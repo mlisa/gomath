@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -20,34 +19,7 @@ type Controller struct {
 	Coordinator *actor.PID
 }
 
-type Coordinators struct {
-	Id      string `json:"id"`
-	Address string `json:"address"`
-}
-
-func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
-	url := "http://gomath.duckdns.org:8080/mirror.json"
-	client := &http.Client{Timeout: 10 * time.Second}
-	var out []Coordinators
-
-	r, err := client.Get(url)
-	if err != nil {
-		return out, err
-	}
-	defer r.Body.Close()
-	if r != nil && err == nil {
-		// read []byte{}
-		b, _ := ioutil.ReadAll(r.Body)
-
-		// Due to some presence of unicode chars convert raw JSON to string than parse it
-		// GO strings works with utf-8
-		if err = json.NewDecoder(strings.NewReader(string(b))).Decode(&out); err != nil {
-			return out, err
-		}
-	}
-	return out, nil
-
-}
+var Coordinators map[string]*actor.PID
 
 func (c *Controller) PublishCoordinator(token string) {
 	url := "http://gomath.duckdns.org:8080/publish"
@@ -69,7 +41,7 @@ func (c *Controller) PublishCoordinator(token string) {
 
 func (c *Controller) StartCoordinator(config common.Config) error {
 	remote.Start(config.Myself.Address)
-	list, err := c.getCoordinatorsList()
+	list, err := common.GetCoordinatorsList()
 	if err != nil {
 		return err
 	}
