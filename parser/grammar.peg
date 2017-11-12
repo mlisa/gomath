@@ -9,17 +9,23 @@
 //
 package parser
 
+var weight = 0
+
 var ops = map[string]func(int, int) int {
     "+": func(l, r int) int {
+        weight += 1
         return l + r
     },
     "-": func(l, r int) int {
+        weight += 2
         return l - r
     },
     "*": func(l, r int) int {
+        weight += 3
         return l * r
     },
     "/": func(l, r int) int {
+        weight += 4
         return l / r
     },
 }
@@ -52,6 +58,14 @@ func eval(first, rest interface{}) int {
         l = ops[op](l, r)
     }
     return l
+}
+
+func GetWeight() int {
+    if weight > 0 {
+        return weight    
+    }else {
+        return -1    
+    }
 }
 }
 
