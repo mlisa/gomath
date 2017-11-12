@@ -53,7 +53,7 @@ func layout(g *gocui.Gui) error {
 	g.Cursor = true
 	g.Mouse = false
 
-	if v, err := g.SetView("input", 0, 0, maxX-1, maxY/6); err != nil {
+	if v, err := g.SetView("input", 0, 0, maxX-1, maxY/6-1); err != nil {
 		v.Title = "Input"
 		if err != gocui.ErrUnknownView {
 			return err
@@ -63,21 +63,21 @@ func layout(g *gocui.Gui) error {
 		v.FgColor = gocui.AttrBold
 		g.SetCurrentView("input")
 	}
-	if v, err := g.SetView("Output", 0, maxY/6, maxX-1, maxY/3); err != nil {
+	if v, err := g.SetView("Output", 0, maxY/6, maxX-1, maxY/3-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Wrap = true
 		v.Title = "Output"
-
+		v.Autoscroll = true
 	}
-
 	if v, err := g.SetView("Log", 0, maxY/3, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		v.Wrap = true
 		v.Title = "Log"
+		v.Autoscroll = true
 	}
 	return nil
 }
