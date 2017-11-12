@@ -10,11 +10,14 @@ local NUM_PEER=${2}
 if [[ $(command -v terminator) ]]; then
   local TERMINAL="terminator"
 else
-  echo "No terminal found"
+  echo "[E] No terminal found"
   exit -1
 fi
 
-rm ${RUN_PATH}/config_*.json
+if [[ $(ls *.json 2>/dev/null) ]]; then
+  echo "[!] Purging old configs..."
+  rm ${RUN_PATH}/config_*.json
+fi
 
 function generateCoordinatorConfig {
   local port=$(( 8000 + ${2} ))
@@ -29,6 +32,7 @@ EOF
 }
 
 for i in {1..${NUM_COOR}}; do
+  echo "[i] Generating new coordinator configs"
   generateCoordinatorConfig ${i} ${i}
 done
 
@@ -48,9 +52,11 @@ EOF
 }
 
 for i in {1..${NUM_PEER}}; do
+  echo "[i] Generating new peer configs"
   generatePeerConfig ${i} ${i}
 done
 
+echo "[i] Compiling..."
 cd ${GOMATH}/peer/ && \
   go build -o peer *.go && \
   mv ${GOMATH}/peer/peer ${GOPATH}/bin/peer
@@ -60,11 +66,13 @@ cd ${GOMATH}/coordinator/ && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
 for i in {1..$(( ${NUM_COOR}-1 ))}; do
-  ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator1.json" &
+  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" 
 done
-  ${TERMINAL} -e "coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json &> /dev/null" &
+  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json"
+echo "[i] Coordinators running"
 
 for i in {1..$(( ${NUM_PEER}-1 ))}; do
-  ${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${i}.json &> /dev/null" &
+  ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json &> /dev/null"
 done
-${TERMINAL} -e "peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json &> /dev/null" &
+${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json &> /dev/null"
+echo "[i] Peer running"
