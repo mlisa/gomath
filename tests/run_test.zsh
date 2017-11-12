@@ -24,7 +24,7 @@ function generateCoordinatorConfig {
 cat << EOF > config_coordinator${1}.json
 {
   "myself" : {
-          "id" : "${1}",
+          "id" : "coordinator${1}",
           "address" : "127.0.0.1:${port}"
   }
 }
@@ -41,7 +41,7 @@ function generatePeerConfig {
 cat << EOF > config_peer${1}.json
 {
   "myself" : {
-          "id" : "${1}",
+          "id" : "peer${1}",
           "address" : "127.0.0.1:${port}",
           "latency" : 100.0,
           "computationcapability" : 50.0,
