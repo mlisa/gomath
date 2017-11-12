@@ -71,6 +71,7 @@ func (c *Controller) getCoordinatorsList() ([]Coordinators, error) {
 }
 
 func (controller *Controller) AskForResult(operation string) {
+	operation = strings.TrimSpace(operation)
 	var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
 		strings.Count(operation, "+") + strings.Count(operation, "-")
 	if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
