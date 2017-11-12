@@ -41,6 +41,10 @@ message RequestForCache {
     string Operation = 1;
 }
 
+message RequestForCacheExternal {
+    string Operation = 1;    
+}
+
 //Response msg for RequestForCache
 message Response {
     string Result = 1;

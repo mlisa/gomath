@@ -57,5 +57,15 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 				}
 			}()
 		}
+	case *message.RequestForCacheExternal:
+		// Received a request from a peer to forward to each known coordinator
+		log.Printf("[COORDINATOR] Rquesto for '%s' from '%s'", msg.Operation, context.Sender().Id)
+		for _, PID := range coordinator.Coordinators {
+			go func() {
+				if r, e := actor.NewPID(PID.Address, PID.Id).RequestFuture(&message.RequestForCache{msg.Operation}, 5*time.Second).Result(); e != nil {
+					context.Sender().Request(r.(*message.Response), context.Self())
+				}
+			}()
+		}
 	}
 }
