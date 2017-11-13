@@ -13,11 +13,6 @@ else
   local TERMINAL="${GOMATH}/tests/term.scpt"
 fi
 
-if [[ $(ls *.json 2>/dev/null) ]]; then
-  echo "[!] Purging old configs..."
-  rm ${RUN_PATH}/config_*.json
-fi
-
 function generateCoordinatorConfig {
   local port=$(( 8000 + ${2} ))
 cat << EOF > config_coordinator${1}.json
@@ -29,11 +24,6 @@ cat << EOF > config_coordinator${1}.json
 }
 EOF
 }
-
-echo "[i] Generating new coordinator configs"
-for i in {1..${NUM_COOR}}; do
-  generateCoordinatorConfig ${i} ${i}
-done
 
 function generatePeerConfig {
   local port=$(( 8100 + ${2} ))
@@ -50,10 +40,17 @@ cat << EOF > config_peer${1}.json
 EOF
 }
 
-echo "[i] Generating new peer configs"
-for i in {1..${NUM_PEER}}; do
-  generatePeerConfig ${i} ${i}
-done
+if [[ ${3} = "--generate" ]]; then
+  echo "[i] Generating new coordinator configs"
+  for i in {1..${NUM_COOR}}; do
+    generateCoordinatorConfig ${i} ${i}
+  done
+  
+  echo "[i] Generating new peer configs"
+  for i in {1..${NUM_PEER}}; do
+    generatePeerConfig ${i} ${i}
+  done
+fi
 
 echo "[i] Compiling..."
 cd ${GOMATH}/peer/ && \
@@ -66,16 +63,16 @@ cd ${GOMATH}/coordinator/ && \
 
 if [[ ${NUM_COOR} -gt 1 ]]; then
   for i in {1..$(( ${NUM_COOR}-1 ))}; do
-    exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" &
+    exec ${TERMINAL} "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" &
   done
 fi
-exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json" &
+exec ${TERMINAL} "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json" &
 echo "[i] Coordinators running"
 
 if [[ ${NUM_PEER} -gt 1 ]]; then
   for i in {1..$(( ${NUM_PEER}-1 ))}; do
-    exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /dev/null" &
+    exec ${TERMINAL} "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /dev/null" &
   done
 fi
-exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null" &
+exec ${TERMINAL} "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null" &
 echo "[i] Peers running"
