@@ -63,7 +63,7 @@ cd ${GOMATH}/coordinator/ && \
 
 if [[ ${NUM_COOR} -gt 1 ]]; then
   for i in {1..$(( ${NUM_COOR}-1 ))}; do
-    eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json\"" &
+    eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${i}.json\"" &
   done
 fi
 eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json\"" &
