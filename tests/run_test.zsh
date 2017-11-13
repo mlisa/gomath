@@ -8,7 +8,7 @@ local NUM_COOR=${1}
 local NUM_PEER=${2}
 
 if [[ $(command -v terminator) ]]; then
-  local TERMINAL="terminator"
+  local TERMINAL="terminator -e"
 else
   local TERMINAL="${GOMATH}/tests/term.scpt"
 fi
@@ -63,16 +63,16 @@ cd ${GOMATH}/coordinator/ && \
 
 if [[ ${NUM_COOR} -gt 1 ]]; then
   for i in {1..$(( ${NUM_COOR}-1 ))}; do
-    exec ${TERMINAL} "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" &
+    eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json\"" &
   done
 fi
-exec ${TERMINAL} "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json" &
+eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json\"" &
 echo "[i] Coordinators running"
 
 if [[ ${NUM_PEER} -gt 1 ]]; then
   for i in {1..$(( ${NUM_PEER}-1 ))}; do
-    exec ${TERMINAL} "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /dev/null" &
+    eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /dev/null\"" &
   done
 fi
-exec ${TERMINAL} "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null" &
+eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null\"" &
 echo "[i] Peers running"
