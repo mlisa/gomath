@@ -10,8 +10,7 @@ local NUM_PEER=${2}
 if [[ $(command -v terminator) ]]; then
   local TERMINAL="terminator"
 else
-  echo "[E] No terminal found"
-  exit -1
+  local TERMINAL="${GOMATH}/tests/term.scpt"
 fi
 
 if [[ $(ls *.json 2>/dev/null) ]]; then
@@ -65,14 +64,18 @@ cd ${GOMATH}/coordinator/ && \
   go build -i -o coordinator *.go && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
-for i in {1..$(( ${NUM_COOR}-1 ))}; do
-  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" 
-done
-  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json"
+if [[ ${NUM_COOR} -gt 1 ]]; then
+  for i in {1..$(( ${NUM_COOR}-1 ))}; do
+    exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" &
+  done
+fi
+exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json" &
 echo "[i] Coordinators running"
 
-for i in {1..$(( ${NUM_PEER}-1 ))}; do
-  ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json"
-done
-${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json"
+if [[ ${NUM_PEER} -gt 1 ]]; then
+  for i in {1..$(( ${NUM_PEER}-1 ))}; do
+    exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json" &
+  done
+fi
+exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json" &
 echo "[i] Peers running"
