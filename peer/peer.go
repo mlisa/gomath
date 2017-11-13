@@ -7,6 +7,8 @@ import (
 	"github.com/mlisa/gomath/common"
 	"github.com/mlisa/gomath/message"
 
+	"time"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
@@ -80,12 +82,13 @@ func (peer *Peer) Operative(context actor.Context) {
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 
 	case *message.AskForResult:
-		for _, otherPeer := range peer.otherNodes {
-			peer.Controller.setLog("Asking to.." + otherPeer.String())
-			otherPeer.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
-
+		res := peer.sendToAll(&message.RequestForCache{Operation: msg.Operation})
+		if res == nil || len(peer.otherNodes) == 0 {
+			peer.Controller.setLog("No one has the response, contacting coordinator")
+			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+		} else {
+			peer.Controller.SetOutput(res.(*message.Response).Result)
 		}
-		context.SetBehavior(peer.WaitingForResponse)
 
 	case *message.NewNode:
 		peer.Controller.Log(NEWNODE)
@@ -103,8 +106,10 @@ func (peer *Peer) Operative(context actor.Context) {
 			context.Respond(&message.Response{Result: res})
 		} else {
 			peer.Controller.Log(NOTFOUND)
-			context.Respond(&message.NotFound{msg.Operation})
 		}
+
+	case *message.Response:
+		peer.Controller.SetOutput(msg.Result)
 
 	case *actor.Stopping:
 		log.Println("[PEER] Stopping, actor is about shut down")
@@ -114,23 +119,24 @@ func (peer *Peer) Operative(context actor.Context) {
 	}
 }
 
-func (peer *Peer) WaitingForResponse(context actor.Context) {
-	numResponse := 0
-	switch msg := context.Message().(type) {
+func (p *Peer) sendToAll(what interface{}) interface{} {
+	// Channel to stop all goroutines
+	response := make(chan interface{})
+	for _, PID := range p.otherNodes {
+		go func() {
+			p.Controller.setLog("Asking to.." + PID.String())
+			req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 2*time.Second)
+			res, _ := req.Result()
+			response <- res
+		}()
 
-	case *message.Response:
-		peer.Controller.Log(RECEIVEDRESPONSE)
-		peer.Controller.SetOutput(msg.Result)
-		context.SetBehavior(peer.Operative)
+	}
 
-	case *message.NotFound:
-		numResponse++
-		if numResponse == len(peer.otherNodes) {
-			peer.Controller.setLog("No peer has the response, asking the coordinator...")
-			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
-		} else if numResponse == len(peer.otherNodes)+1 {
-			peer.Controller.ComputeLocal(msg.Operation)
-			context.SetBehavior(peer.Operative)
+	for i := 0; i < len(p.otherNodes); i++ {
+		val := <-response
+		if response, ok := val.(*message.Response); ok {
+			return response
 		}
 	}
+	return nil
 }

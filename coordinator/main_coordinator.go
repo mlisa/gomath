@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	maxpeer = kingpin.Flag("max-peers", "Maximum number of nodes to accept").Short('m').Default("50").Int()
+	maxpeer = kingpin.Flag("max-peers", "Maximum number of nodes to accept").Short('m').Default("2").Int()
 	config  = kingpin.Flag("config", "Configuration file for coordinator").Short('c').Default("config_coordinator.json").String()
 	token   = kingpin.Flag("token", "one-time-token to register the coordinator").Short('t').String()
 )

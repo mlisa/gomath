@@ -56,7 +56,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		// Received a request from a peer to forward to each known coordinator
 		log.Printf("[COORDINATOR] Request for '%s' from '%s'", msg.Operation, context.Sender().Id)
 		response := coordinator.sendToAll(context.Self(), coordinator.Peers, &message.RequestForCache{msg.Operation})
-		context.Sender().Request(response.(*message.Response), context.Self())
+		context.Respond(response.(*message.Response))
 	}
 }
 
