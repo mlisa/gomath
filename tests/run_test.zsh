@@ -66,13 +66,13 @@ cd ${GOMATH}/coordinator/ && \
   mv ${GOMATH}/coordinator/coordinator ${GOPATH}/bin/coordinator
 
 for i in {1..$(( ${NUM_COOR}-1 ))}; do
-  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" 
+  exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator1.json" &
 done
-  ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json"
+  exec ${TERMINAL} -e "${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json" &
 echo "[i] Coordinators running"
 
 for i in {1..$(( ${NUM_PEER}-1 ))}; do
-  ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json"
+  exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json" &
 done
-${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json"
+${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json" &
 echo "[i] Peers running"
