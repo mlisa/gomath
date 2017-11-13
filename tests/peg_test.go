@@ -15,7 +15,6 @@ func TestPegmatchSimple(t *testing.T) {
 	start := time.Now()
 	got, err := parser.ParseReader("", bytes.NewBufferString(operation))
 	log.Printf("STRING: %s", operation)
-	log.Printf("WEIGHT: %d", parser.GetWeight())
 	if err != nil || got.(int) != 6 {
 		t.Error("failed")
 	}
@@ -27,7 +26,6 @@ func TestPegmatchMedium(t *testing.T) {
 	start := time.Now()
 	got, err := parser.ParseReader("", bytes.NewBufferString(operation))
 	log.Printf("STRING: %s", operation)
-	log.Printf("WEIGHT: %d", parser.GetWeight())
 	if err != nil || got.(int) != 18 {
 		t.Error("failed")
 	}
@@ -40,7 +38,6 @@ func TestPegmatchHard(t *testing.T) {
 	start := time.Now()
 	got, err := parser.ParseReader("", bytes.NewBufferString(operation))
 	log.Printf("STRING: %s", operation)
-	log.Printf("WEIGHT: %d", parser.GetWeight())
 	if err != nil || got.(int) != 2 {
 		t.Error("failed")
 	}

@@ -29,6 +29,7 @@ func main() {
 	}
 
 	if err := controller.StartCoordinator(configCoordinator); err == nil {
+		StartGui()
 		console.ReadLine()
 	} else {
 		log.Panicln(err)
