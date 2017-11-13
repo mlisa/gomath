@@ -74,8 +74,8 @@ echo "[i] Coordinators running"
 
 if [[ ${NUM_PEER} -gt 1 ]]; then
   for i in {1..$(( ${NUM_PEER}-1 ))}; do
-    exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json" &
+    exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /dev/null" &
   done
 fi
-exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json" &
+exec ${TERMINAL} -e "${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null" &
 echo "[i] Peers running"
