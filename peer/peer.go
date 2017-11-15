@@ -58,6 +58,9 @@ func (peer *Peer) Receive(context actor.Context) {
 
 func (peer *Peer) Connected(context actor.Context) {
 	switch msg := context.Message().(type) {
+	case *message.Ping:
+		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
+
 	case *message.Welcome:
 		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
@@ -75,6 +78,8 @@ func (peer *Peer) Connected(context actor.Context) {
 
 func (peer *Peer) Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
+	case *message.Ping:
+		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *actor.Terminated:
 		peer.Controller.Log(LOSTCONNECTION)

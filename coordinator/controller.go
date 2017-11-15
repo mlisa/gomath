@@ -12,14 +12,13 @@ import (
 	"github.com/AsynkronIT/protoactor-go/remote"
 	"github.com/jroimartin/gocui"
 	"github.com/mlisa/gomath/common"
+	"github.com/mlisa/gomath/message"
 )
 
 type Controller struct {
 	Gui         *gocui.Gui
 	Coordinator *actor.PID
 }
-
-var Coordinators map[string]*actor.PID
 
 func (c *Controller) PublishCoordinator(token string) {
 	url := "http://gomath.duckdns.org:8080/publish"
@@ -45,10 +44,16 @@ func (c *Controller) StartCoordinator(config common.Config) error {
 	if err != nil {
 		return err
 	}
-	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list})
+	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list, Controller: c})
 	_, err = actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (c *Controller) RunPing() {
+	if c.Coordinator != nil {
+		c.Coordinator.Tell(&message.Ping{})
+	}
 }

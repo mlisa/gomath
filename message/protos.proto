@@ -69,3 +69,11 @@ message ResponseFromCache {
 message LostConnectionCoordinator{
 	actor.PID coordinator = 1;
 }
+
+message Ping {
+    int64 Ping = 1;    
+}
+
+message Pong {
+    int64 Pong = 1;
+}

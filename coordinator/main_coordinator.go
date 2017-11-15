@@ -23,13 +23,13 @@ func main() {
 		kingpin.FatalUsage("Wrong usage, please see the help")
 	}
 
-	controller := Controller{}
+	controller := &Controller{}
 	if len(*token) > 0 {
 		controller.PublishCoordinator(*token)
 	}
 
 	if err := controller.StartCoordinator(configCoordinator); err == nil {
-		StartGui()
+		StartGui(controller)
 		console.ReadLine()
 	} else {
 		log.Panicln(err)
