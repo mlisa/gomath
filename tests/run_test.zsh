@@ -76,3 +76,18 @@ if [[ ${NUM_PEER} -gt 1 ]]; then
 fi
 eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /dev/null\"" &
 echo "[i] Peers running"
+
+
+#######################################################
+# Generate file for mirror using bash
+##!/usr/bin/env bash
+#out="["
+#for i in $(seq 1 ${1}); do
+#  out="$out{
+#  	\"id\": \"coordinator${i}\",
+#  	\"address\": \"127.0.0.1:800${i}\"
+#	},"
+#done
+#out="${out%?}]"
+#echo $out
+#######################################################
