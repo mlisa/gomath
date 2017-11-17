@@ -4,7 +4,6 @@ import (
 	"log"
 	"runtime"
 
-	console "github.com/AsynkronIT/goconsole"
 	"github.com/mlisa/gomath/common"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -23,14 +22,14 @@ func main() {
 		kingpin.FatalUsage("Wrong usage, please see the help")
 	}
 
-	controller := &Controller{}
+	gui := &GuiCoordinator{}
+	controller := &Controller{Gui: gui}
 	if len(*token) > 0 {
 		controller.PublishCoordinator(*token)
 	}
 
 	if err := controller.StartCoordinator(configCoordinator); err == nil {
-		StartGui(controller)
-		console.ReadLine()
+		gui.StartGui(controller)
 	} else {
 		log.Panicln(err)
 	}

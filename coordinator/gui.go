@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/jroimartin/gocui"
 )
 
-type Gui struct {
+type GuiCoordinator struct {
 	Controller *Controller
+	mainGui    *gocui.Gui
 }
 
 func setLayout(g *gocui.Gui) error {
@@ -18,8 +21,7 @@ func setLayout(g *gocui.Gui) error {
 			return err
 		}
 		view.Title = "Log"
-		view.SelBgColor = gocui.ColorGreen
-		view.SelFgColor = gocui.ColorBlack
+		view.FgColor = gocui.ColorCyan
 		g.SetCurrentView("log")
 	}
 	if view, err := g.SetView("peers", 0, maxY/2, maxX-1, maxY-1); err != nil {
@@ -27,15 +29,14 @@ func setLayout(g *gocui.Gui) error {
 			return err
 		}
 		view.Title = "Peers"
-		view.SelBgColor = gocui.ColorGreen
-		view.SelFgColor = gocui.ColorBlack
+		view.BgColor = gocui.ColorGreen
 	}
 	return nil
 }
 
-func StartGui(c *Controller) {
+func (gui *GuiCoordinator) StartGui(c *Controller) {
 	g, err := gocui.NewGui(gocui.Output256)
-	c.Gui = g
+	gui.mainGui = g
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -49,6 +50,32 @@ func StartGui(c *Controller) {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+}
+
+func (gui *GuiCoordinator) PrintToView(v string, s string) {
+	gui.mainGui.Update(func(g *gocui.Gui) error {
+		if v, e := gui.mainGui.View(v); e == nil {
+			fmt.Fprintln(v, s)
+			return nil
+		} else {
+			return e
+		}
+	})
+
+}
+
+func (gui *GuiCoordinator) UpdatePings(pings map[string]int64) {
+	gui.mainGui.Update(func(g *gocui.Gui) error {
+		if v, e := gui.mainGui.View("peers"); e == nil {
+			v.Clear()
+			for k, p := range pings {
+				fmt.Fprintln(v, k+": "+strconv.FormatInt(p, 10)+" ms")
+			}
+			return nil
+		} else {
+			return e
+		}
+	})
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {

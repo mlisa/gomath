@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,13 +11,12 @@ import (
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/AsynkronIT/protoactor-go/remote"
-	"github.com/jroimartin/gocui"
 	"github.com/mlisa/gomath/common"
 	"github.com/mlisa/gomath/message"
 )
 
 type Controller struct {
-	Gui         *gocui.Gui
+	Gui         *GuiCoordinator
 	Coordinator *actor.PID
 }
 
@@ -45,7 +45,7 @@ func (c *Controller) StartCoordinator(config common.Config) error {
 		return err
 	}
 	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list, Controller: c})
-	_, err = actor.SpawnNamed(props, config.Myself.Id)
+	c.Coordinator, err = actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		return err
 	}
@@ -56,4 +56,12 @@ func (c *Controller) RunPing() {
 	if c.Coordinator != nil {
 		c.Coordinator.Tell(&message.Ping{})
 	}
+}
+
+func (c *Controller) UpdatePings(pings map[string]int64) {
+	c.Gui.UpdatePings(pings)
+}
+
+func (c *Controller) Log(s string) {
+	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.Coordinator.String(), s))
 }
