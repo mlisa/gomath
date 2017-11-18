@@ -63,7 +63,10 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.Pong:
 		// Received a Pong from a previous Ping from a peer
 		ping := pings[context.Sender().String()]
-		pings[context.Sender().String()] = common.Pong{ping.Value - msg.Pong, true}
+		if !ping.Complete {
+			pong := time.Now().UnixNano() / 1000000
+			pings[context.Sender().String()] = common.Pong{pong - ping.Value, true}
+		}
 		coordinator.Controller.UpdatePings(pings)
 	case *message.Ping:
 		// Pings all peers
@@ -74,7 +77,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			for _, PID := range coordinator.Peers {
 				ping := time.Now().UnixNano() / 1000000
 				pings[PID.String()] = common.Pong{ping, false}
-				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{ping})
+				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{})
 			}
 		}
 	case *message.GetPing:
