@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"math/rand"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
@@ -19,17 +21,37 @@ type Peer struct {
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-	switch context.Message().(type) {
+	switch msg := context.Message().(type) {
 	case *actor.Started:
 		coordinators, err := common.GetCoordinatorsList() //lettura da file config
 		if err == nil {
+			coordChannel := make(chan interface{})
 			log.Println(coordinators)
 			for _, PID := range coordinators {
-				log.Println("[PEER] Try to connect to " + PID.Address + " " + PID.Id)
-				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-				tempCoordinator.Request(&message.Hello{}, context.Self())
+				peer.Controller.setLog("Try to connect to " + PID.Address + " " + PID.Id)
+				go func() {
+					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+					fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
+					res, err := fut.Result()
+					if err == nil {
+						coordChannel <- res
+					}
+				}()
 			}
+
+			val := <-coordChannel
+			if response, ok := val.(*message.Available); ok {
+				peer.coordinator = response.Sender
+				context.Watch(peer.coordinator)
+				peer.Controller.Log(FOUNDNEWCOORDINATOR)
+				peer.coordinator.Request(&message.Register{}, context.Self())
+				context.SetBehavior(peer.Connected)
+			}
+
 		}
+
+	case *actor.Failure:
+		peer.Controller.setLog("Not available" + msg.Who.String())
 
 	case *message.LostConnectionCoordinator:
 		coordinators, err := common.GetCoordinatorsList() //lettura da file config
@@ -59,13 +81,13 @@ func (peer *Peer) Receive(context actor.Context) {
 func (peer *Peer) Connected(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *message.Ping:
+		r := rand.Intn(500)
+		time.Sleep(time.Millisecond * time.Duration(r))
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *message.Welcome:
-		log.Println("[PEER] I'm in!")
 		peer.otherNodes = msg.Nodes
 		delete(peer.otherNodes, context.Self().String())
-		log.Println(peer.otherNodes)
 		context.SetBehavior(peer.Operative)
 
 	case *actor.Stopping:
@@ -79,6 +101,8 @@ func (peer *Peer) Connected(context actor.Context) {
 func (peer *Peer) Operative(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *message.Ping:
+		r := rand.Intn(500)
+		time.Sleep(time.Millisecond * time.Duration(r))
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *actor.Terminated:
@@ -89,8 +113,16 @@ func (peer *Peer) Operative(context actor.Context) {
 	case *message.AskForResult:
 		res := peer.sendToAll(&message.RequestForCache{Operation: msg.Operation})
 		if res == nil || len(peer.otherNodes) == 0 {
-			peer.Controller.setLog("No one has the response, contacting coordinator")
-			peer.coordinator.Request(&message.RequestForCache{Operation: msg.Operation}, context.Self())
+			peer.Controller.setLog("No one has the response, contacting coordinator...")
+			future := peer.coordinator.RequestFuture(&message.RequestForCache{Operation: msg.Operation}, 10*time.Second)
+			r, err := future.Result()
+			if err != nil {
+				peer.Controller.Log(NORESPONSE)
+				peer.Controller.ComputeLocal(msg.Operation)
+			} else {
+				peer.Controller.setLog("Received answer from another region")
+				peer.Controller.SetOutput(r.(*message.Response).Result)
+			}
 		} else {
 			peer.Controller.SetOutput(res.(*message.Response).Result)
 		}
@@ -124,12 +156,12 @@ func (peer *Peer) Operative(context actor.Context) {
 	}
 }
 
-func (p *Peer) sendToAll(what interface{}) interface{} {
+func (peer *Peer) sendToAll(what interface{}) interface{} {
 	// Channel to stop all goroutines
 	response := make(chan interface{})
-	for _, PID := range p.otherNodes {
+	for _, PID := range peer.otherNodes {
+		peer.Controller.setLog("Asking to.." + PID.String())
 		go func() {
-			p.Controller.setLog("Asking to.." + PID.String())
 			req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 2*time.Second)
 			res, _ := req.Result()
 			response <- res
@@ -137,7 +169,7 @@ func (p *Peer) sendToAll(what interface{}) interface{} {
 
 	}
 
-	for i := 0; i < len(p.otherNodes); i++ {
+	for i := 0; i < len(peer.otherNodes); i++ {
 		val := <-response
 		if response, ok := val.(*message.Response); ok {
 			return response

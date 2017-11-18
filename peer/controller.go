@@ -35,6 +35,7 @@ const (
 	OFFLINECOMPUTATION
 	FOUNDRESULTINCACHE
 	NOTFOUND
+	NORESPONSE
 )
 
 func (controller *Controller) AskForResult(operation string) {
@@ -116,6 +117,9 @@ func (controller *Controller) Log(eventType EventType) {
 
 	case NOTFOUND:
 		controller.setLog("Operation not present in cache")
+
+	case NORESPONSE:
+		controller.setLog("No one has the answer... ")
 
 	}
 }

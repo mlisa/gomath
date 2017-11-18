@@ -10,7 +10,9 @@ message Hello {
 }
 
 //Response msg from coordinator to Hello msg
-message Available { }
+message Available {
+	actor.PID sender = 1;
+}
 
 message NotAvailable { }
 
