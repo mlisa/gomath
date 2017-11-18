@@ -32,14 +32,18 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		}
 	case *message.Register:
 		// Peer wants to be registered in the region, update the nodes
-		log(fmt.Sprintf("Added peer '%s' to region", context.Sender().Id))
-		context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
-		// update all others peers newnode
-		for _, PID := range coordinator.Peers {
-			actor.NewPID(PID.Address, PID.Id).Tell(&message.NewNode{context.Sender()})
+		if len(coordinator.Peers) < coordinator.MaxPeers {
+			log(fmt.Sprintf("Added peer '%s' to region", context.Sender().Id))
+			context.Sender().Request(&message.Welcome{coordinator.Peers}, context.Self())
+			// update all others peers newnode
+			for _, PID := range coordinator.Peers {
+				actor.NewPID(PID.Address, PID.Id).Tell(&message.NewNode{context.Sender()})
+			}
+			context.Watch(context.Sender())
+			coordinator.Peers[context.Sender().String()] = context.Sender()
+		} else {
+			context.Sender().Tell(&message.NotAvailable{})
 		}
-		context.Watch(context.Sender())
-		coordinator.Peers[context.Sender().String()] = context.Sender()
 		context.Self().Tell(&message.Ping{})
 		coordinator.Controller.UpdatePings(pings.value)
 

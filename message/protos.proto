@@ -14,6 +14,9 @@ message Available {
     actor.PID sender = 1;
 }
 
+message NotAvailable {
+}
+
 //Message in response to peer when someone doesnt have the result in cache
 message NotFound {
 	string Operation = 1;
