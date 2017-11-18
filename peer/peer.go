@@ -26,16 +26,12 @@ func (peer *Peer) Receive(context actor.Context) {
 		response := peer.lookForCoordinator()
 
 		peer.coordinator = response.Sender
-		context.Watch(peer.coordinator)
-		peer.Controller.Log(FOUNDNEWCOORDINATOR)
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 	case *message.LookForCoordinator:
 		response := peer.lookForCoordinator()
 
 		peer.coordinator = response.Sender
-		context.Watch(peer.coordinator)
-		peer.Controller.Log(FOUNDNEWCOORDINATOR)
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 
@@ -47,13 +43,6 @@ func (peer *Peer) Receive(context actor.Context) {
 				tempCoordinator.Request(&message.Hello{peer.Controller.Config.Myself.Latency, peer.Controller.Config.Myself.ComputationCapability, peer.Controller.Config.Myself.Queue}, context.Self())
 			}
 		}
-
-	case *message.Available:
-		peer.coordinator = context.Sender()
-		context.Watch(peer.coordinator)
-		peer.Controller.Log(FOUNDNEWCOORDINATOR)
-		peer.coordinator.Request(&message.Register{}, context.Self())
-		context.SetBehavior(peer.Connected)
 
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
@@ -72,6 +61,8 @@ func (peer *Peer) Connected(context actor.Context) {
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *message.Welcome:
+		peer.Controller.Log(FOUNDNEWCOORDINATOR)
+		context.Watch(peer.coordinator)
 		peer.otherNodes = msg.Nodes
 		delete(peer.otherNodes, context.Self().String())
 		context.SetBehavior(peer.Operative)
@@ -150,11 +141,11 @@ func (peer *Peer) sendToAll(what interface{}) interface{} {
 	response := make(chan interface{})
 	for _, PID := range peer.otherNodes {
 		peer.Controller.setLog("Asking to.." + PID.String())
-		go func() {
+		go func(PID *actor.PID) {
 			req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 2*time.Second)
 			res, _ := req.Result()
 			response <- res
-		}()
+		}(PID)
 
 	}
 
@@ -171,16 +162,15 @@ func (peer *Peer) lookForCoordinator() *message.Available {
 	coordinators, err := common.GetCoordinatorsList() //lettura da file config
 	if err == nil {
 		coordChannel := make(chan interface{})
-		log.Println(coordinators)
 		for _, PID := range coordinators {
-			go func() {
+			go func(PID *actor.PID) {
 				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
 				fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
 				res, err := fut.Result()
 				if err == nil {
 					coordChannel <- res
 				}
-			}()
+			}(PID)
 		}
 
 		val := <-coordChannel
