@@ -77,3 +77,7 @@ message Ping {
 message Pong {
     int64 Pong = 1;
 }
+
+message GetPing {
+    string Peer = 1;
+}
