@@ -116,7 +116,7 @@ func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what
 			}(PID)
 		}
 	}
-	for range who {
+	for i := 0; i < len(who)-1; i++ {
 		val := <-response
 		if val, ok := val.(*message.Response); ok {
 			return val
