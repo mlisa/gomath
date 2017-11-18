@@ -32,9 +32,7 @@ cat << EOF > config_peer${1}.json
   "myself" : {
           "id" : "peer${1}",
           "address" : "127.0.0.1:${port}",
-          "latency" : 100.0,
-          "computationcapability" : 50.0,
-          "queue" : 12.0
+          "computecapability" : 50.0
   }
 }
 EOF
