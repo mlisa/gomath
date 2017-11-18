@@ -23,35 +23,21 @@ type Peer struct {
 func (peer *Peer) Receive(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *actor.Started:
-		coordinators, err := common.GetCoordinatorsList() //lettura da file config
-		if err == nil {
-			coordChannel := make(chan interface{})
-			log.Println(coordinators)
-			for _, PID := range coordinators {
-				peer.Controller.setLog("Try to connect to " + PID.Address + " " + PID.Id)
-				go func() {
-					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-					fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
-					res, err := fut.Result()
-					if err == nil {
-						coordChannel <- res
-					}
-				}()
-			}
+		response := peer.lookForCoordinator()
 
-			val := <-coordChannel
-			if response, ok := val.(*message.Available); ok {
-				peer.coordinator = response.Sender
-				context.Watch(peer.coordinator)
-				peer.Controller.Log(FOUNDNEWCOORDINATOR)
-				peer.coordinator.Request(&message.Register{}, context.Self())
-				context.SetBehavior(peer.Connected)
-			}
+		peer.coordinator = response.Sender
+		context.Watch(peer.coordinator)
+		peer.Controller.Log(FOUNDNEWCOORDINATOR)
+		peer.coordinator.Request(&message.Register{}, context.Self())
+		context.SetBehavior(peer.Connected)
+	case *message.LookForCoordinator:
+		response := peer.lookForCoordinator()
 
-		}
-
-	case *actor.Failure:
-		peer.Controller.setLog("Not available" + msg.Who.String())
+		peer.coordinator = response.Sender
+		context.Watch(peer.coordinator)
+		peer.Controller.Log(FOUNDNEWCOORDINATOR)
+		peer.coordinator.Request(&message.Register{}, context.Self())
+		context.SetBehavior(peer.Connected)
 
 	case *message.LostConnectionCoordinator:
 		coordinators, err := common.GetCoordinatorsList() //lettura da file config
@@ -90,6 +76,9 @@ func (peer *Peer) Connected(context actor.Context) {
 		delete(peer.otherNodes, context.Self().String())
 		context.SetBehavior(peer.Operative)
 
+	case *message.NotAvailable:
+		context.SetBehavior(peer.Receive)
+		context.Self().Tell(&message.LookForCoordinator{})
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
 
@@ -111,10 +100,10 @@ func (peer *Peer) Operative(context actor.Context) {
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 
 	case *message.AskForResult:
-		res := peer.sendToAll(&message.RequestForCache{Operation: msg.Operation})
+		res := peer.sendToAll(&message.RequestForCache{msg.Operation, context.Self()})
 		if res == nil || len(peer.otherNodes) == 0 {
 			peer.Controller.setLog("No one has the response, contacting coordinator...")
-			future := peer.coordinator.RequestFuture(&message.RequestForCache{Operation: msg.Operation}, 10*time.Second)
+			future := peer.coordinator.RequestFuture(&message.RequestForCache{msg.Operation, context.Self()}, 10*time.Second)
 			r, err := future.Result()
 			if err != nil {
 				peer.Controller.Log(NORESPONSE)
@@ -174,6 +163,31 @@ func (peer *Peer) sendToAll(what interface{}) interface{} {
 		if response, ok := val.(*message.Response); ok {
 			return response
 		}
+	}
+	return nil
+}
+
+func (peer *Peer) lookForCoordinator() *message.Available {
+	coordinators, err := common.GetCoordinatorsList() //lettura da file config
+	if err == nil {
+		coordChannel := make(chan interface{})
+		log.Println(coordinators)
+		for _, PID := range coordinators {
+			go func() {
+				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+				fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
+				res, err := fut.Result()
+				if err == nil {
+					coordChannel <- res
+				}
+			}()
+		}
+
+		val := <-coordChannel
+		if response, ok := val.(*message.Available); ok {
+			return response
+		}
+		return nil
 	}
 	return nil
 }

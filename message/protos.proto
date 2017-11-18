@@ -25,6 +25,8 @@ message NotFound {
 //Message sent from new node to his coordinator after receiving Available msg
 message Register { }
 
+message LookForCoordinator { }
+
 //Message to new node from coordinator containing the peer list
 message Welcome {
 	map<string, actor.PID>  nodes = 1;
@@ -42,10 +44,12 @@ message DeadNode {
 //Message sent by a node to other nodes (also coordinator if necessary)
 message RequestForCache {
     string Operation = 1;
+	actor.PID sender = 2;
 }
 
 message RequestForCacheExternal {
-    string Operation = 1;    
+    string Operation = 1;
+	actor.PID sender = 2;
 }
 
 //Response msg for RequestForCache
