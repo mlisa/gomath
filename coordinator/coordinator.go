@@ -109,14 +109,16 @@ func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what
 	// Channel to stop all goroutines
 	response := make(chan interface{})
 	for _, PID := range who {
-		if PID.Address != from.Address {
-			go func(PID *actor.PID) {
-				res, _ := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
-				response <- res
-			}(PID)
-		}
+		go func(PID *actor.PID) {
+			res := nil
+			if PID.Address != from.Address {
+				res, _ = actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
+			}
+			response <- res
+		}(PID)
 	}
-	for i := 0; i < len(who)-1; i++ {
+	for i := 0; i < len(who); i++ {
+		for _, PID := range who {
 		val := <-response
 		if val, ok := val.(*message.Response); ok {
 			return val
