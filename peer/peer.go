@@ -61,7 +61,7 @@ func (peer *Peer) Connected(context actor.Context) {
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *message.Welcome:
-		peer.Controller.Log(FOUNDNEWCOORDINATOR)
+		peer.Controller.Log(FOUNDNEWCOORDINATOR, peer.coordinator.String())
 		context.Watch(peer.coordinator)
 		peer.otherNodes = msg.Nodes
 		delete(peer.otherNodes, context.Self().String())
@@ -86,21 +86,21 @@ func (peer *Peer) Operative(context actor.Context) {
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
 	case *actor.Terminated:
-		peer.Controller.Log(LOSTCONNECTION)
+		peer.Controller.Log(LOSTCONNECTION, msg.Who.String())
 		context.SetBehavior(peer.Receive)
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 
 	case *message.AskForResult:
 		res := peer.sendToAll(&message.RequestForCache{msg.Operation, context.Self()})
 		if res == nil || len(peer.otherNodes) == 0 {
-			peer.Controller.setLog("No one has the response, contacting coordinator...")
+			peer.Controller.Log(ASKCOORDINATOR, peer.coordinator.String())
 			future := peer.coordinator.RequestFuture(&message.RequestForCache{msg.Operation, context.Self()}, 10*time.Second)
 			r, err := future.Result()
 			if err != nil {
-				peer.Controller.Log(NORESPONSE)
+				peer.Controller.Log(NORESPONSE, "")
 				peer.Controller.ComputeLocal(msg.Operation)
 			} else {
-				peer.Controller.setLog("Received answer from another region")
+				peer.Controller.Log(EXTERNALANSWER, "")
 				peer.Controller.SetOutput(r.(*message.Response).Result)
 			}
 		} else {
@@ -108,21 +108,21 @@ func (peer *Peer) Operative(context actor.Context) {
 		}
 
 	case *message.NewNode:
-		peer.Controller.Log(NEWNODE)
+		peer.Controller.Log(NEWNODE, msg.Newnode.String())
 		peer.otherNodes[msg.Newnode.String()] = msg.Newnode
 
 	case *message.DeadNode:
-		peer.Controller.Log(DEADNODE)
+		peer.Controller.Log(DEADNODE, msg.DeadNode.String())
 		delete(peer.otherNodes, msg.DeadNode.String())
 
 	case *message.RequestForCache:
-		peer.Controller.Log(SEARCHINCACHE)
+		peer.Controller.Log(SEARCHINCACHE, msg.Sender.String())
 		res := peer.Controller.SearchInCache(msg.Operation)
 		if res != "" {
-			peer.Controller.Log(FOUNDRESULTINCACHE)
+			peer.Controller.Log(FOUNDRESULTINCACHE, "")
 			context.Respond(&message.Response{Result: res})
 		} else {
-			peer.Controller.Log(NOTFOUND)
+			peer.Controller.Log(NOTFOUND, "")
 		}
 
 	case *message.Response:
@@ -140,7 +140,6 @@ func (peer *Peer) sendToAll(what interface{}) interface{} {
 	// Channel to stop all goroutines
 	response := make(chan interface{})
 	for _, PID := range peer.otherNodes {
-		peer.Controller.setLog("Asking to.." + PID.String())
 		go func(PID *actor.PID) {
 			req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 2*time.Second)
 			res, _ := req.Result()
