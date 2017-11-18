@@ -29,7 +29,7 @@ func main() {
 	controller := Controller{Gui: g, Cache: &CacheManager{}, Config: config}
 	defer g.Close()
 
-	props := actor.FromInstance(&Peer{Controller: &controller})
+	props := actor.FromInstance(&Peer{Controller: &controller, computeCapability: config.Myself.ComputationCapability})
 	peer, err := actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		println("[PEER] Name already in use")

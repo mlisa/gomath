@@ -21,7 +21,9 @@ message NotFound {
 }
 
 //Message sent from new node to his coordinator after receiving Available msg
-message Register { }
+message Register {
+	float computeCapability = 1;
+}
 
 message LookForCoordinator { }
 

@@ -15,9 +15,10 @@ import (
 )
 
 type Peer struct {
-	otherNodes  map[string]*actor.PID
-	coordinator *actor.PID
-	Controller  *Controller
+	otherNodes        map[string]*actor.PID
+	coordinator       *actor.PID
+	Controller        *Controller
+	computeCapability float32
 }
 
 func (peer *Peer) Receive(context actor.Context) {
@@ -26,13 +27,13 @@ func (peer *Peer) Receive(context actor.Context) {
 		response := peer.lookForCoordinator(nil)
 
 		peer.coordinator = response.Sender
-		peer.coordinator.Request(&message.Register{}, context.Self())
+		peer.coordinator.Request(&message.Register{peer.computeCapability}, context.Self())
 		context.SetBehavior(peer.Connected)
 	case *message.LookForCoordinator:
 		response := peer.lookForCoordinator(nil)
 
 		peer.coordinator = response.Sender
-		peer.coordinator.Request(&message.Register{}, context.Self())
+		peer.coordinator.Request(&message.Register{peer.computeCapability}, context.Self())
 		context.SetBehavior(peer.Connected)
 
 	case *message.LostConnectionCoordinator:
@@ -40,7 +41,7 @@ func (peer *Peer) Receive(context actor.Context) {
 		response := peer.lookForCoordinator(msg.Coordinator)
 
 		peer.coordinator = response.Sender
-		peer.coordinator.Request(&message.Register{}, context.Self())
+		peer.coordinator.Request(&message.Register{peer.computeCapability}, context.Self())
 		context.SetBehavior(peer.Connected)
 
 	case *actor.Stopping:
@@ -90,10 +91,10 @@ func (peer *Peer) Operative(context actor.Context) {
 		context.Self().Tell(&message.LostConnectionCoordinator{msg.Who})
 
 	case *message.AskForResult:
-		res := peer.sendToAll(&message.RequestForCache{msg.Operation, context.Self()})
+		res := common.SendToAll(context.Self(), peer.otherNodes, &message.RequestForCache{msg.Operation, context.Self()})
 		if res == nil || len(peer.otherNodes) == 0 {
 			peer.Controller.Log(ASKCOORDINATOR, peer.coordinator.String())
-			future := peer.coordinator.RequestFuture(&message.RequestForCache{msg.Operation, context.Self()}, 10*time.Second)
+			future := peer.coordinator.RequestFuture(&message.RequestForCache{msg.Operation, context.Self()}, 6*time.Second)
 			r, err := future.Result()
 			if err != nil {
 				peer.Controller.Log(NORESPONSE, "")
@@ -135,7 +136,7 @@ func (peer *Peer) Operative(context actor.Context) {
 	}
 }
 
-func (peer *Peer) sendToAll(what interface{}) interface{} {
+/*func (peer *Peer) sendToAll(what interface{}) interface{} {
 	// Channel to stop all goroutines
 	response := make(chan interface{})
 	for _, PID := range peer.otherNodes {
@@ -154,7 +155,7 @@ func (peer *Peer) sendToAll(what interface{}) interface{} {
 		}
 	}
 	return nil
-}
+}*/
 
 func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Available {
 	coordinators, err := common.GetCoordinatorsList() //lettura da file config
