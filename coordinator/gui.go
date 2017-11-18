@@ -32,6 +32,7 @@ func setLayout(g *gocui.Gui) error {
 		view.Highlight = true
 		view.SelBgColor = gocui.ColorCyan
 		view.SelFgColor = gocui.ColorYellow | gocui.AttrBold
+		view.Autoscroll = true
 		g.SetCurrentView("peers")
 	}
 	return nil
@@ -72,14 +73,32 @@ func (gui *GuiCoordinator) UpdatePings(pings map[string]int64) {
 	gui.mainGui.Update(func(g *gocui.Gui) error {
 		if v, e := gui.mainGui.View("peers"); e == nil {
 			v.Clear()
-			for k, p := range pings {
-				fmt.Fprintln(v, k+" "+strconv.FormatInt(p, 10)+" ms")
+			for s, _ := range gui.Controller.GetPeers() {
+				ping := pings[s]
+				if ping > 0 {
+					fmt.Fprintln(v, s+" "+strconv.FormatInt(ping, 10)+" ms")
+				} else {
+					fmt.Fprintln(v, s+" N/A ms")
+				}
 			}
-			return nil
-		} else {
-			return e
 		}
+		if v, e := gui.mainGui.View("peer"); e == nil {
+			buf := v.Buffer()
+			infos := strings.Split(buf, "\n")
+			name := strings.Split(infos[1], " ")[1]
+			address := strings.Split(infos[2], " ")[1]
+			v.Clear()
+			pong := pings[address+"/"+name]
+			fmt.Fprintln(v, "Status: OK")
+			fmt.Fprintln(v, "Name: "+name)
+			fmt.Fprintln(v, "Address: "+address)
+			fmt.Fprintln(v, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+		}
+		return nil
 	})
+}
+
+func (gui *GuiCoordinator) UpdatePing(peer string, ping int64) {
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
@@ -127,7 +146,12 @@ func (gui *GuiCoordinator) initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("peers", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		gui.Controller.RunPing()
 		g.Update(func(g *gocui.Gui) error {
-			gui.newView(g)
+			vp, _ := g.View("peers")
+			cx, _ := vp.Cursor()
+			l, _ := vp.Line(cx)
+			if len(l) > 0 {
+				gui.newView(l, g)
+			}
 			return nil
 		})
 		return nil
@@ -193,16 +217,13 @@ func moveTo(v *gocui.View, step int) {
 	}
 }
 
-func (gui *GuiCoordinator) newView(g *gocui.Gui) error {
-	vp, _ := g.View("peers")
-	cx, _ := vp.Cursor()
+func (gui *GuiCoordinator) newView(l string, g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 	name := "peer"
 	if view, err := g.SetView(name, 5, 5, maxX-5, maxY-5); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		l, _ := vp.Line(cx)
 		l = strings.Split(l, " ")[0]
 		pong := gui.Controller.GetLatency(l)
 		view.Title = "Peer Details"

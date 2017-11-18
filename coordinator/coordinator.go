@@ -17,8 +17,10 @@ type Coordinator struct {
 	Controller   *Controller
 }
 
-var pings map[string]int64
-var mutex = &sync.Mutex{}
+var pings struct {
+	sync.RWMutex
+	value map[string]int64
+}
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
 	log := coordinator.Controller.Log
@@ -28,7 +30,6 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		if len(coordinator.Peers) < coordinator.MaxPeers {
 			context.Respond(&message.Available{context.Self()})
 		}
-		context.Self().Tell(&message.Ping{})
 	case *message.Register:
 		// Peer wants to be registered in the region, update the nodes
 		log(fmt.Sprintf("Added peer '%s' to region", context.Sender().Id))
@@ -40,6 +41,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		context.Watch(context.Sender())
 		coordinator.Peers[context.Sender().String()] = context.Sender()
 		context.Self().Tell(&message.Ping{})
+		coordinator.Controller.UpdatePings(pings.value)
 
 	case *message.RequestForCache:
 		// Received a request from an another coordinator to forward to each peer
@@ -58,28 +60,28 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 
 	case *message.Pong:
 		// Received a Pong from a previous Ping from a peer
-		mutex.Lock()
-		latency := msg.Pong - pings[context.Sender().String()]
-		pings[context.Sender().String()] = latency
-		coordinator.Controller.UpdatePings(pings)
-		mutex.Unlock()
+		pings.Lock()
+		pings.value[context.Sender().String()] = pings.value[context.Sender().String()] + msg.Pong
+		coordinator.Controller.UpdatePings(pings.value)
+		pings.Unlock()
 	case *message.Ping:
-		// Pinga all pees
-		mutex.Lock()
-		pings = make(map[string]int64, len(coordinator.Peers))
+		// Pings all peers
+		pings.Lock()
+		pings.value = make(map[string]int64, len(coordinator.Peers))
 		if len(coordinator.Peers) > 0 {
 			for _, PID := range coordinator.Peers {
-				ping := time.Now().UnixNano() / 1000000
-				pings[PID.String()] = ping
+				ping := time.Now().UnixNano() / 1000000 * -1
+				pings.value[PID.String()] = ping
 				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{})
 			}
 		}
-		mutex.Unlock()
+		pings.Unlock()
 	case *message.GetPing:
-		if ping, ok := pings[msg.Peer]; ok {
+		pings.RLock()
+		if ping, ok := pings.value[msg.Peer]; ok && ping > 0 {
 			context.Respond(&message.Pong{Pong: ping})
 		}
-		context.Self().Tell(&message.Ping{})
+		pings.RUnlock()
 
 	case *actor.Stopping:
 		log("Stopping, actor is about shut down")

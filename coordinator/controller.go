@@ -16,8 +16,9 @@ import (
 )
 
 type Controller struct {
-	Gui         *GuiCoordinator
-	Coordinator *actor.PID
+	Gui            *GuiCoordinator
+	CoordinatorPID *actor.PID
+	Coordinator    *Coordinator
 }
 
 func (c *Controller) PublishCoordinator(token string) {
@@ -44,8 +45,9 @@ func (c *Controller) StartCoordinator(config common.Config) error {
 	if err != nil {
 		return err
 	}
-	props := actor.FromInstance(&Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list, Controller: c})
-	c.Coordinator, err = actor.SpawnNamed(props, config.Myself.Id)
+	c.Coordinator = &Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list, Controller: c}
+	props := actor.FromInstance(c.Coordinator)
+	c.CoordinatorPID, err = actor.SpawnNamed(props, config.Myself.Id)
 	if err != nil {
 		return err
 	}
@@ -53,8 +55,8 @@ func (c *Controller) StartCoordinator(config common.Config) error {
 }
 
 func (c *Controller) RunPing() {
-	if c.Coordinator != nil {
-		c.Coordinator.Tell(&message.Ping{})
+	if c.CoordinatorPID != nil {
+		c.CoordinatorPID.Tell(&message.Ping{})
 	}
 }
 
@@ -62,14 +64,22 @@ func (c *Controller) UpdatePings(pings map[string]int64) {
 	c.Gui.UpdatePings(pings)
 }
 
+func (c *Controller) UpdatePing(peer string, ping int64) {
+	c.Gui.UpdatePing(peer, ping)
+}
+
 func (c *Controller) Log(s string) {
-	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.Coordinator.String(), s))
+	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.CoordinatorPID.String(), s))
 }
 
 func (c *Controller) GetLatency(peer string) int64 {
-	req := c.Coordinator.RequestFuture(&message.GetPing{Peer: peer}, 2*time.Second)
+	req := c.CoordinatorPID.RequestFuture(&message.GetPing{Peer: peer}, 2*time.Second)
 	if r, err := req.Result(); err == nil {
 		return r.(*message.Pong).Pong
 	}
 	return -1
+}
+
+func (c *Controller) GetPeers() map[string]*actor.PID {
+	return c.Coordinator.Peers
 }
