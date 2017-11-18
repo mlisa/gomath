@@ -36,33 +36,36 @@ const (
 	FOUNDRESULTINCACHE
 	NOTFOUND
 	NORESPONSE
+	ASKCOORDINATOR
+	EXTERNALANSWER
 )
 
 func (controller *Controller) AskForResult(operation string) {
 	operation = strings.TrimSpace(operation)
-	var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
-		strings.Count(operation, "+") + strings.Count(operation, "-")
-	if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
-		controller.Peer.Tell(&message.AskForResult{operation})
-		controller.Log(ASKFORRESULT)
-	} else {
-		controller.ComputeLocal(operation)
-	}
-}
-
-func (controller *Controller) ComputeLocal(operation string) {
-	result, err := parser.ParseReader("", bytes.NewBufferString(operation))
-	if err == nil {
-		controller.SetOutput(strconv.Itoa(result.(int)))
-		controller.Log(OFFLINECOMPUTATION)
-		controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
+	if _, err := parser.Parse("", []byte(operation)); err == nil {
+		var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
+			strings.Count(operation, "+") + strings.Count(operation, "-")
+		if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
+			controller.Peer.Tell(&message.AskForResult{operation})
+			controller.Log(ASKFORRESULT, "")
+		} else {
+			controller.ComputeLocal(operation)
+		}
 	} else {
 		controller.SetOutput("[ERROR] Wrong input format")
 	}
 }
 
+func (controller *Controller) ComputeLocal(operation string) {
+	result, _ := parser.ParseReader("", bytes.NewBufferString(operation))
+
+	controller.SetOutput(strconv.Itoa(result.(int)))
+	controller.Log(OFFLINECOMPUTATION, "")
+	controller.Cache.addNewOperation(operation, strconv.Itoa(result.(int)))
+
+}
+
 func (controller *Controller) SearchInCache(operation string) string {
-	controller.Log(SEARCHINCACHE)
 	if result, err := controller.Cache.retrieveResult(operation); err == nil {
 		return result
 	}
@@ -86,40 +89,46 @@ func (controller *Controller) setLog(log string) {
 	})
 }
 
-func (controller *Controller) Log(eventType EventType) {
+func (controller *Controller) Log(eventType EventType, from string) {
 	switch eventType {
 	case NEWNODE:
-		controller.setLog("New node entered in region")
+		controller.setLog("[" + controller.Peer.Id + "] New node entered in region: " + from)
 
 	case DEADNODE:
-		controller.setLog("One node of the region died")
+		controller.setLog("[" + controller.Peer.Id + "] One node of the region died: " + from)
 
 	case LOSTCONNECTION:
-		controller.setLog("Lost connection from coordinator")
+		controller.setLog("[" + controller.Peer.Id + "] Lost connection from coordinator: " + from)
 
 	case FOUNDNEWCOORDINATOR:
-		controller.setLog("Found new coordinator.")
+		controller.setLog("[" + controller.Peer.Id + "] Found new coordinator: " + from)
 
 	case ASKFORRESULT:
-		controller.setLog("Sent AskForResult message to peers")
+		controller.setLog("[" + controller.Peer.Id + "] Sent AskForResult message to peers")
 
 	case SEARCHINCACHE:
-		controller.setLog("Received RequestForCache message from peer")
+		controller.setLog("[" + controller.Peer.Id + "] Received RequestForCache message from: " + from)
 
 	case RECEIVEDRESPONSE:
-		controller.setLog("Received Response message from peer")
+		controller.setLog("[" + controller.Peer.Id + "] Received Response message from " + from)
 
 	case FOUNDRESULTINCACHE:
-		controller.setLog("Retrieved result from local cache")
+		controller.setLog("[" + controller.Peer.Id + "] Retrieved result from local cache")
 
 	case OFFLINECOMPUTATION:
-		controller.setLog("Operation computed offline")
+		controller.setLog("[" + controller.Peer.Id + "] Operation computed offline")
 
 	case NOTFOUND:
-		controller.setLog("Operation not present in cache")
+		controller.setLog("[" + controller.Peer.Id + "] Operation not present in cache")
 
 	case NORESPONSE:
-		controller.setLog("No one has the answer... ")
+		controller.setLog("[" + controller.Peer.Id + "] No one has the answer... ")
+
+	case EXTERNALANSWER:
+		controller.setLog("[" + controller.Peer.Id + "] Received answer from another region")
+
+	case ASKCOORDINATOR:
+		controller.setLog("[" + controller.Peer.Id + "] No one has the response, contacting coordinator...")
 
 	}
 }
