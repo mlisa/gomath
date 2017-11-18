@@ -21,28 +21,27 @@ type Peer struct {
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-	switch context.Message().(type) {
+	switch msg := context.Message().(type) {
 	case *actor.Started:
-		response := peer.lookForCoordinator()
+		response := peer.lookForCoordinator(nil)
 
 		peer.coordinator = response.Sender
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 	case *message.LookForCoordinator:
-		response := peer.lookForCoordinator()
+		response := peer.lookForCoordinator(nil)
 
 		peer.coordinator = response.Sender
 		peer.coordinator.Request(&message.Register{}, context.Self())
 		context.SetBehavior(peer.Connected)
 
 	case *message.LostConnectionCoordinator:
-		coordinators, err := common.GetCoordinatorsList() //lettura da file config
-		if err == nil {
-			for _, PID := range coordinators {
-				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-				tempCoordinator.Request(&message.Hello{peer.Controller.Config.Myself.Latency, peer.Controller.Config.Myself.ComputationCapability, peer.Controller.Config.Myself.Queue}, context.Self())
-			}
-		}
+
+		response := peer.lookForCoordinator(msg.Coordinator)
+
+		peer.coordinator = response.Sender
+		peer.coordinator.Request(&message.Register{}, context.Self())
+		context.SetBehavior(peer.Connected)
 
 	case *actor.Stopping:
 		fmt.Println("[PEER] Stopping, actor is about shut down")
@@ -157,26 +156,27 @@ func (peer *Peer) sendToAll(what interface{}) interface{} {
 	return nil
 }
 
-func (peer *Peer) lookForCoordinator() *message.Available {
+func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Available {
 	coordinators, err := common.GetCoordinatorsList() //lettura da file config
 	if err == nil {
 		coordChannel := make(chan interface{})
 		for _, PID := range coordinators {
-			go func(PID *actor.PID) {
-				tempCoordinator := actor.NewPID(PID.Address, PID.Id)
-				fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
-				res, err := fut.Result()
-				if err == nil {
-					coordChannel <- res
-				}
-			}(PID)
+			if deadCoordinator == nil || (deadCoordinator != nil && !PID.Equal(deadCoordinator)) {
+				go func(PID *actor.PID) {
+					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
+					fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
+					res, err := fut.Result()
+					if err == nil {
+						coordChannel <- res
+					}
+				}(PID)
+			}
 		}
 
 		val := <-coordChannel
 		if response, ok := val.(*message.Available); ok {
 			return response
 		}
-		return nil
 	}
 	return nil
 }

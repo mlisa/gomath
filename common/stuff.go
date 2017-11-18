@@ -15,9 +15,7 @@ import (
 type Node struct {
 	Id                    string
 	Address               string
-	Latency               float32
 	ComputationCapability float32
-	Queue                 float32
 }
 
 type Config struct {
