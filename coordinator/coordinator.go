@@ -48,14 +48,14 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		coordinator.Controller.UpdatePings(pings.value)
 
 	case *message.RequestForCache:
-		// Received a request from an another coordinator to forward to each peer
+		// Received a request from a peer to forward to each known coordinator
 		log(fmt.Sprintf("Request for '%s' from '%s'", msg.Operation, context.Sender().Id))
 		if response := coordinator.sendToAll(context.Self(), coordinator.Coordinators, &message.RequestForCacheExternal{msg.Operation}); response != nil {
 			context.Sender().Request(response.(*message.Response), context.Self())
 		}
 		context.Self().Tell(&message.Ping{})
 	case *message.RequestForCacheExternal:
-		// Received a request from a peer to forward to each known coordinator
+		// Received a request from an another coordinator to forward to each peer
 		log(fmt.Sprintf("Request for '%s' from '%s'", msg.Operation, context.Sender().Id))
 		if response := coordinator.sendToAll(context.Self(), coordinator.Peers, &message.RequestForCache{msg.Operation}); response != nil {
 			context.Respond(response.(*message.Response))
