@@ -103,21 +103,12 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 
 func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
 	// Channel to stop all goroutines
-	shutdown := make(chan struct{})
 	response := make(chan interface{})
 	for _, PID := range who {
 		if PID.Address != from.Address {
 			go func() {
-				select {
-				default:
-					req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second)
-					if r, err := req.Result(); err == nil {
-						response <- r
-						close(shutdown)
-					}
-				case <-shutdown:
-					return
-				}
+				res, _ := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
+				response <- res
 			}()
 		}
 	}
