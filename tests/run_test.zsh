@@ -41,6 +41,8 @@ EOF
 }
 
 if [[ ${3} = "--generate" ]]; then
+  rm ${RUN_PATH}/*.json
+  rm /tmp/coordinator*.log /tmp/peer*.log
   echo "[i] Generating new coordinator configs"
   for i in {1..${NUM_COOR}}; do
     generateCoordinatorConfig ${i} ${i}
@@ -64,19 +66,23 @@ cd ${GOMATH}/coordinator/ && \
 if [[ ${NUM_COOR} -gt 1 ]]; then
   for i in {1..$(( ${NUM_COOR}-1 ))}; do
     eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${i}.json >& /tmp/coordinator${i}.log\"" &
+    sleep 0.2
   done
 fi
 eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json >& /tmp/coordinator${NUM_COOR}.log\"" &
+sleep 0.2
 echo "[i] Coordinators running"
 
 if [[ ${NUM_PEER} -gt 1 ]]; then
   for i in {1..$(( ${NUM_PEER}-1 ))}; do
     eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /tmp/peer${i}.log\"" &
+    sleep 0.2
   done
 fi
 eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /tmp/peer${NUM_PEER}.log\"" &
 echo "[i] Peers running"
 
+sleep 0.2
 \tail -f /tmp/coordinator*.log /tmp/peer*.log
 
 

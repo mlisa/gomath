@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/jroimartin/gocui"
 )
@@ -22,14 +23,16 @@ func setLayout(g *gocui.Gui) error {
 		}
 		view.Title = "Log"
 		view.FgColor = gocui.ColorCyan
-		g.SetCurrentView("log")
 	}
 	if view, err := g.SetView("peers", 0, maxY/2, maxX-1, maxY-1); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
 		view.Title = "Peers"
-		view.BgColor = gocui.ColorGreen
+		view.Highlight = true
+		view.SelBgColor = gocui.ColorCyan
+		view.SelFgColor = gocui.ColorYellow | gocui.AttrBold
+		g.SetCurrentView("peers")
 	}
 	return nil
 }
@@ -37,13 +40,14 @@ func setLayout(g *gocui.Gui) error {
 func (gui *GuiCoordinator) StartGui(c *Controller) {
 	g, err := gocui.NewGui(gocui.Output256)
 	gui.mainGui = g
+	gui.Controller = c
 	if err != nil {
 		log.Panicln(err)
 	}
 	defer g.Close()
 	g.SetManagerFunc(setLayout)
 
-	if err := initKeybindings(g); err != nil {
+	if err := gui.initKeybindings(g); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -69,7 +73,7 @@ func (gui *GuiCoordinator) UpdatePings(pings map[string]int64) {
 		if v, e := gui.mainGui.View("peers"); e == nil {
 			v.Clear()
 			for k, p := range pings {
-				fmt.Fprintln(v, k+": "+strconv.FormatInt(p, 10)+" ms")
+				fmt.Fprintln(v, k+" "+strconv.FormatInt(p, 10)+" ms")
 			}
 			return nil
 		} else {
@@ -82,11 +86,132 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func initKeybindings(g *gocui.Gui) error {
+func (gui *GuiCoordinator) scrollUp(g *gocui.Gui, v *gocui.View) error {
+	g.Update(func(g *gocui.Gui) error {
+		return gui.scrollView(g, v, -1)
+	})
+	return nil
+}
+
+func (gui *GuiCoordinator) scrollDown(g *gocui.Gui, v *gocui.View) error {
+	g.Update(func(g *gocui.Gui) error {
+		return gui.scrollView(g, v, 1)
+	})
+	return nil
+}
+
+func (gui *GuiCoordinator) initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
+		return err
+	}
+	// move up
+	if err := g.SetKeybinding("peers", gocui.KeyArrowUp, gocui.ModNone, gui.scrollUp); err != nil {
+		return err
+	}
+	// move up
+	if err := g.SetKeybinding("peers", 'k', gocui.ModNone, gui.scrollUp); err != nil {
+		return err
+	}
+	// move down
+	if err := g.SetKeybinding("peers", gocui.KeyArrowDown, gocui.ModNone, gui.scrollDown); err != nil {
+		return err
+	}
+	// move down
+	if err := g.SetKeybinding("peers", 'j', gocui.ModNone, gui.scrollDown); err != nil {
+		return err
+	}
+	// show peer details
+	if err := g.SetKeybinding("peers", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		gui.Controller.RunPing()
+		g.Update(func(g *gocui.Gui) error {
+			gui.newView(g)
+			return nil
+		})
+		return nil
+	}); err != nil {
+		return err
+	}
+	// hide peer details
+	if err := g.SetKeybinding("", gocui.KeyBackspace2, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		gui.Controller.RunPing()
+		if _, err := g.View("peer"); err == nil {
+			if err := g.DeleteView("peer"); err != nil {
+				return err
+			} else {
+				g.SetCurrentView("peers")
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Move the cursor of 'peers' view and show the content of the highlighted bin
+func (gui *GuiCoordinator) scrollView(g *gocui.Gui, v *gocui.View, dy int) error {
+	if v != nil {
+		gui.Controller.RunPing()
+		g.Update(func(g *gocui.Gui) error {
+			_, cy := v.Cursor()
+			l, _ := v.Line(cy + dy)
+			if len(l) > 0 {
+				moveTo(v, dy)
+			}
+			return nil
+		})
+	}
+	return nil
+}
+
+func moveTo(v *gocui.View, step int) {
+	cx, cy := v.Cursor()
+	ox, oy := v.Origin()
+	_, sy := v.Size()
+	offset := (sy - 1) / 2
+	// Start list
+	if cy <= offset || (oy == 0 && step < 0) {
+		v.SetCursor(cx, cy+step)
+	} else {
+		var l string
+		var e error
+		if step > 0 {
+			// End list
+			l, e = v.Line(sy)
+		} else {
+			// Middle list
+			l, e = v.Line(cy + step + offset)
+		}
+		if e == nil && len(l) > 0 {
+			v.SetOrigin(ox, oy+step)
+		} else {
+			v.SetCursor(cx, cy+step)
+		}
+	}
+}
+
+func (gui *GuiCoordinator) newView(g *gocui.Gui) error {
+	vp, _ := g.View("peers")
+	cx, _ := vp.Cursor()
+	maxX, maxY := g.Size()
+	name := "peer"
+	if view, err := g.SetView(name, 5, 5, maxX-5, maxY-5); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		l, _ := vp.Line(cx)
+		l = strings.Split(l, " ")[0]
+		pong := gui.Controller.GetLatency(l)
+		view.Title = "Peer Details"
+		fmt.Fprintln(view, "Status: OK")
+		fmt.Fprintln(view, "Name: "+strings.Split(l, "/")[1])
+		fmt.Fprintln(view, "Address: "+strings.Split(l, "/")[0])
+		fmt.Fprintln(view, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+	}
+	if _, err := g.SetCurrentView(name); err != nil {
 		return err
 	}
 	return nil

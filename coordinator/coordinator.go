@@ -73,10 +73,15 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			for _, PID := range coordinator.Peers {
 				ping := time.Now().UnixNano() / 1000000
 				pings[PID.String()] = ping
-				actor.NewPID(PID.Address, PID.Id).Request(&message.Ping{}, context.Self())
+				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{})
 			}
 		}
 		mutex.Unlock()
+	case *message.GetPing:
+		if ping, ok := pings[msg.Peer]; ok {
+			context.Respond(&message.Pong{Pong: ping})
+		}
+		context.Self().Tell(&message.Ping{})
 
 	case *actor.Stopping:
 		log("Stopping, actor is about shut down")
@@ -93,25 +98,17 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.DeadNode{msg.Who}, context.Self())
 		}
 	}
+
 }
 
 func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
 	// Channel to stop all goroutines
-	shutdown := make(chan struct{})
 	response := make(chan interface{})
 	for _, PID := range who {
 		if PID.Address != from.Address {
 			go func() {
-				select {
-				default:
-					req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second)
-					if r, err := req.Result(); err == nil {
-						response <- r
-						close(shutdown)
-					}
-				case <-shutdown:
-					return
-				}
+				res, _ := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
+				response <- res
 			}()
 		}
 	}

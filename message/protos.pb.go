@@ -25,6 +25,7 @@
 		LostConnectionCoordinator
 		Ping
 		Pong
+		GetPing
 */
 package message
 
@@ -35,9 +36,9 @@ import actor "github.com/AsynkronIT/protoactor-go/actor"
 
 import strings "strings"
 import reflect "reflect"
-import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+import sortkeys "github.com/gogo/protobuf/sortkeys"
 
-import encoding_binary "encoding/binary"
+import binary "encoding/binary"
 
 import io "io"
 
@@ -326,6 +327,21 @@ func (m *Pong) GetPong() int64 {
 	return 0
 }
 
+type GetPing struct {
+	Peer string `protobuf:"bytes,1,opt,name=Peer,proto3" json:"Peer,omitempty"`
+}
+
+func (m *GetPing) Reset()                    { *m = GetPing{} }
+func (*GetPing) ProtoMessage()               {}
+func (*GetPing) Descriptor() ([]byte, []int) { return fileDescriptorProtos, []int{17} }
+
+func (m *GetPing) GetPeer() string {
+	if m != nil {
+		return m.Peer
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Hello)(nil), "message.Hello")
 	proto.RegisterType((*Available)(nil), "message.Available")
@@ -344,6 +360,7 @@ func init() {
 	proto.RegisterType((*LostConnectionCoordinator)(nil), "message.LostConnectionCoordinator")
 	proto.RegisterType((*Ping)(nil), "message.Ping")
 	proto.RegisterType((*Pong)(nil), "message.Pong")
+	proto.RegisterType((*GetPing)(nil), "message.GetPing")
 }
 func (this *Hello) Equal(that interface{}) bool {
 	if that == nil {
@@ -863,6 +880,36 @@ func (this *Pong) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetPing) Equal(that interface{}) bool {
+	if that == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	}
+
+	that1, ok := that.(*GetPing)
+	if !ok {
+		that2, ok := that.(GetPing)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		if this == nil {
+			return true
+		}
+		return false
+	} else if this == nil {
+		return false
+	}
+	if this.Peer != that1.Peer {
+		return false
+	}
+	return true
+}
 func (this *Hello) GoString() string {
 	if this == nil {
 		return "nil"
@@ -925,7 +972,7 @@ func (this *Welcome) GoString() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%#v: %#v,", k, this.Nodes[k])
@@ -1056,6 +1103,16 @@ func (this *Pong) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *GetPing) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&message.GetPing{")
+	s = append(s, "Peer: "+fmt.Sprintf("%#v", this.Peer)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringProtos(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1082,19 +1139,19 @@ func (m *Hello) MarshalTo(dAtA []byte) (int, error) {
 	if m.Latency != 0 {
 		dAtA[i] = 0xd
 		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Latency))))
+		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Latency))))
 		i += 4
 	}
 	if m.ComputationCapability != 0 {
 		dAtA[i] = 0x15
 		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputationCapability))))
+		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputationCapability))))
 		i += 4
 	}
 	if m.Queue != 0 {
 		dAtA[i] = 0x1d
 		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Queue))))
+		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Queue))))
 		i += 4
 	}
 	return i, nil
@@ -1518,6 +1575,30 @@ func (m *Pong) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetPing) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetPing) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Peer) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintProtos(dAtA, i, uint64(len(m.Peer)))
+		i += copy(dAtA[i:], m.Peer)
+	}
+	return i, nil
+}
+
 func encodeVarintProtos(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1705,6 +1786,16 @@ func (m *Pong) Size() (n int) {
 	return n
 }
 
+func (m *GetPing) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Peer)
+	if l > 0 {
+		n += 1 + l + sovProtos(uint64(l))
+	}
+	return n
+}
+
 func sovProtos(x uint64) (n int) {
 	for {
 		n++
@@ -1776,7 +1867,7 @@ func (this *Welcome) String() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%v: %v,", k, this.Nodes[k])
@@ -1899,6 +1990,16 @@ func (this *Pong) String() string {
 	}, "")
 	return s
 }
+func (this *GetPing) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetPing{`,
+		`Peer:` + fmt.Sprintf("%v", this.Peer) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func valueToStringProtos(v interface{}) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -1944,7 +2045,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.Latency = float32(math.Float32frombits(v))
 		case 2:
@@ -1955,7 +2056,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.ComputationCapability = float32(math.Float32frombits(v))
 		case 3:
@@ -1966,7 +2067,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.Queue = float32(math.Float32frombits(v))
 		default:
@@ -3298,6 +3399,85 @@ func (m *Pong) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipProtos(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthProtos
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetPing) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowProtos
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetPing: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetPing: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Peer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowProtos
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthProtos
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Peer = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipProtos(dAtA[iNdEx:])

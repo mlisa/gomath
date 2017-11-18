@@ -65,3 +65,11 @@ func (c *Controller) UpdatePings(pings map[string]int64) {
 func (c *Controller) Log(s string) {
 	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.Coordinator.String(), s))
 }
+
+func (c *Controller) GetLatency(peer string) int64 {
+	req := c.Coordinator.RequestFuture(&message.GetPing{Peer: peer}, 2*time.Second)
+	if r, err := req.Result(); err == nil {
+		return r.(*message.Pong).Pong
+	}
+	return -1
+}
