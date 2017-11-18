@@ -37,9 +37,9 @@ import actor "github.com/AsynkronIT/protoactor-go/actor"
 
 import strings "strings"
 import reflect "reflect"
-import sortkeys "github.com/gogo/protobuf/sortkeys"
+import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 
-import binary "encoding/binary"
+import encoding_binary "encoding/binary"
 
 import io "io"
 
@@ -1039,7 +1039,7 @@ func (this *Welcome) GoString() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	sortkeys.Strings(keysForNodes)
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%#v: %#v,", k, this.Nodes[k])
@@ -1212,19 +1212,19 @@ func (m *Hello) MarshalTo(dAtA []byte) (int, error) {
 	if m.Latency != 0 {
 		dAtA[i] = 0xd
 		i++
-		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Latency))))
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Latency))))
 		i += 4
 	}
 	if m.ComputationCapability != 0 {
 		dAtA[i] = 0x15
 		i++
-		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputationCapability))))
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputationCapability))))
 		i += 4
 	}
 	if m.Queue != 0 {
 		dAtA[i] = 0x1d
 		i++
-		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Queue))))
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.Queue))))
 		i += 4
 	}
 	return i, nil
@@ -2001,7 +2001,7 @@ func (this *Welcome) String() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	sortkeys.Strings(keysForNodes)
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%v: %v,", k, this.Nodes[k])
@@ -2181,7 +2181,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.Latency = float32(math.Float32frombits(v))
 		case 2:
@@ -2192,7 +2192,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.ComputationCapability = float32(math.Float32frombits(v))
 		case 3:
@@ -2203,7 +2203,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.Queue = float32(math.Float32frombits(v))
 		default:

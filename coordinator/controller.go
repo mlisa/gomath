@@ -60,7 +60,7 @@ func (c *Controller) RunPing() {
 	}
 }
 
-func (c *Controller) UpdatePings(pings map[string]int64) {
+func (c *Controller) UpdatePings(pings map[string]common.Pong) {
 	c.Gui.UpdatePings(pings)
 }
 

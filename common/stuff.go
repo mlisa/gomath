@@ -30,6 +30,11 @@ type jsonParse struct {
 	Address string `json:"address"`
 }
 
+type Pong struct {
+	Value    int64
+	Complete bool
+}
+
 func GetFileConfig(path string) (Config, error) {
 	fileAbs, _ := filepath.Abs(path)
 	configuration := Config{}
