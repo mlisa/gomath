@@ -26,9 +26,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.Hello:
 		// Coordinator received an 'Hello' message from a want which want to join the region, check availability
 		if len(coordinator.Peers) < coordinator.MaxPeers {
-			context.Sender().Request(&message.Available{}, context.Self())
-		} else {
-			context.Sender().Request(&message.NotAvailable{}, context.Self())
+			context.Respond(&message.Available{})
 		}
 		context.Self().Tell(&message.Ping{})
 	case *message.Register:
