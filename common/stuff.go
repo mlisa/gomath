@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/mlisa/gomath/message"
 )
 
 type Node struct {
@@ -79,4 +80,25 @@ func GetCoordinatorsList() (map[string]*actor.PID, error) {
 		coordinators[list[i].Id] = actor.NewPID(list[i].Address, list[i].Id)
 	}
 	return coordinators, nil
+}
+
+func SendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
+	// Channel to stop all goroutines
+	response := make(chan interface{})
+	for _, PID := range who {
+		go func(PID *actor.PID) {
+			var res interface{}
+			if !PID.Equal(from) {
+				res, _ = actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
+			}
+			response <- res
+		}(PID)
+	}
+	for range who {
+		val := <-response
+		if val, ok := val.(*message.Response); ok {
+			return val
+		}
+	}
+	return nil
 }

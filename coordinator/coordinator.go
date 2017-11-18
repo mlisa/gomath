@@ -47,14 +47,14 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 	case *message.RequestForCache:
 		// Received a request from a peer to forward to each known coordinator
 		log(fmt.Sprintf("Request for '%s' from '%s'", msg.Operation, msg.Sender.Id))
-		if response := coordinator.sendToAll(context.Self(), coordinator.Coordinators, &message.RequestForCacheExternal{msg.Operation, context.Self()}); response != nil {
+		if response := common.SendToAll(context.Self(), coordinator.Coordinators, &message.RequestForCacheExternal{msg.Operation, context.Self()}); response != nil {
 			context.Respond(response.(*message.Response))
 		}
 		context.Self().Tell(&message.Ping{})
 	case *message.RequestForCacheExternal:
 		// Received a request from an another coordinator to forward to each peer
 		log(fmt.Sprintf("Request for '%s' from '%s'", msg.Operation, msg.Sender.Id))
-		if response := coordinator.sendToAll(context.Self(), coordinator.Peers, &message.RequestForCache{msg.Operation, context.Self()}); response != nil {
+		if response := common.SendToAll(context.Self(), coordinator.Peers, &message.RequestForCache{msg.Operation, context.Self()}); response != nil {
 			context.Respond(response.(*message.Response))
 		}
 		context.Self().Tell(&message.Ping{})
@@ -101,25 +101,4 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.DeadNode{msg.Who}, context.Self())
 		}
 	}
-}
-
-func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
-	// Channel to stop all goroutines
-	response := make(chan interface{})
-	for _, PID := range who {
-		go func(PID *actor.PID) {
-			var res interface{}
-			if PID.Address != from.Address {
-				res, _ = actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
-			}
-			response <- res
-		}(PID)
-	}
-	for range who {
-		val := <-response
-		if val, ok := val.(*message.Response); ok {
-			return val
-		}
-	}
-	return nil
 }

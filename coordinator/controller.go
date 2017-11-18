@@ -69,7 +69,7 @@ func (c *Controller) UpdatePing(peer string, ping int64) {
 }
 
 func (c *Controller) Log(s string) {
-	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.CoordinatorPID.String(), s))
+	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.CoordinatorPID.Id, s))
 }
 
 func (c *Controller) GetLatency(peer string) int64 {
