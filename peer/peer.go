@@ -21,7 +21,7 @@ type Peer struct {
 }
 
 func (peer *Peer) Receive(context actor.Context) {
-	switch msg := context.Message().(type) {
+	switch context.Message().(type) {
 	case *actor.Started:
 		response := peer.lookForCoordinator()
 

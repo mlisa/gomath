@@ -54,10 +54,10 @@ func layout(g *gocui.Gui) error {
 	g.Mouse = false
 
 	if v, err := g.SetView("input", 0, 0, maxX-1, maxY/6-1); err != nil {
-		v.Title = "Input"
 		if err != gocui.ErrUnknownView {
 			return err
 		}
+		v.Title = "Input"
 		v.Editable = true
 		v.Wrap = true
 		v.FgColor = gocui.AttrBold
