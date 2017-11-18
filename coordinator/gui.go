@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jroimartin/gocui"
+	"github.com/mlisa/gomath/common"
 )
 
 type GuiCoordinator struct {
@@ -69,14 +70,18 @@ func (gui *GuiCoordinator) PrintToView(v string, s string) {
 
 }
 
-func (gui *GuiCoordinator) UpdatePings(pings map[string]int64) {
+func (gui *GuiCoordinator) UpdatePings(pings map[string]common.Pong) {
+	type pong struct {
+		value    int64
+		complete bool
+	}
 	gui.mainGui.Update(func(g *gocui.Gui) error {
 		if v, e := gui.mainGui.View("peers"); e == nil {
 			v.Clear()
 			for s, _ := range gui.Controller.GetPeers() {
 				ping := pings[s]
-				if ping > 0 {
-					fmt.Fprintln(v, s+" "+strconv.FormatInt(ping, 10)+" ms")
+				if ping.Complete {
+					fmt.Fprintln(v, s+" "+strconv.FormatInt(ping.Value, 10)+" ms")
 				} else {
 					fmt.Fprintln(v, s+" N/A ms")
 				}
@@ -87,12 +92,17 @@ func (gui *GuiCoordinator) UpdatePings(pings map[string]int64) {
 			infos := strings.Split(buf, "\n")
 			name := strings.Split(infos[1], " ")[1]
 			address := strings.Split(infos[2], " ")[1]
+			latency := strings.Split(infos[3], " ")[1]
 			v.Clear()
 			pong := pings[address+"/"+name]
 			fmt.Fprintln(v, "Status: OK")
 			fmt.Fprintln(v, "Name: "+name)
 			fmt.Fprintln(v, "Address: "+address)
-			fmt.Fprintln(v, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+			if pong.Complete {
+				fmt.Fprintln(v, "Latency: "+strconv.FormatInt(pong.Value, 10)+" ms")
+			} else {
+				fmt.Fprintln(v, "Latency: "+latency+" ms")
+			}
 		}
 		return nil
 	})

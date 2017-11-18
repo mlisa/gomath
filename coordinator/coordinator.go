@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/mlisa/gomath/common"
 	"github.com/mlisa/gomath/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
@@ -17,10 +17,7 @@ type Coordinator struct {
 	Controller   *Controller
 }
 
-var pings struct {
-	sync.RWMutex
-	value map[string]int64
-}
+var pings map[string]common.Pong
 
 func (coordinator *Coordinator) Receive(context actor.Context) {
 	log := coordinator.Controller.Log
@@ -45,7 +42,7 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			context.Sender().Tell(&message.NotAvailable{})
 		}
 		context.Self().Tell(&message.Ping{})
-		coordinator.Controller.UpdatePings(pings.value)
+		coordinator.Controller.UpdatePings(pings)
 
 	case *message.RequestForCache:
 		// Received a request from a peer to forward to each known coordinator
@@ -61,31 +58,29 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			context.Respond(response.(*message.Response))
 		}
 		context.Self().Tell(&message.Ping{})
+		coordinator.Controller.UpdatePings(pings)
 
 	case *message.Pong:
 		// Received a Pong from a previous Ping from a peer
-		pings.Lock()
-		pings.value[context.Sender().String()] = pings.value[context.Sender().String()] + msg.Pong
-		coordinator.Controller.UpdatePings(pings.value)
-		pings.Unlock()
+		ping := pings[context.Sender().String()]
+		pings[context.Sender().String()] = common.Pong{ping.Value - msg.Pong, true}
+		coordinator.Controller.UpdatePings(pings)
 	case *message.Ping:
 		// Pings all peers
-		pings.Lock()
-		pings.value = make(map[string]int64, len(coordinator.Peers))
+		if len(pings) <= 0 {
+			pings = make(map[string]common.Pong, len(coordinator.Peers))
+		}
 		if len(coordinator.Peers) > 0 {
 			for _, PID := range coordinator.Peers {
-				ping := time.Now().UnixNano() / 1000000 * -1
-				pings.value[PID.String()] = ping
-				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{})
+				ping := time.Now().UnixNano() / 1000000
+				pings[PID.String()] = common.Pong{ping, false}
+				actor.NewPID(PID.Address, PID.Id).Tell(&message.Ping{ping})
 			}
 		}
-		pings.Unlock()
 	case *message.GetPing:
-		pings.RLock()
-		if ping, ok := pings.value[msg.Peer]; ok && ping > 0 {
-			context.Respond(&message.Pong{Pong: ping})
+		if ping, ok := pings[msg.Peer]; ok && ping.Complete {
+			context.Respond(&message.Pong{ping.Value})
 		}
-		pings.RUnlock()
 
 	case *actor.Stopping:
 		log("Stopping, actor is about shut down")
@@ -98,11 +93,11 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 			delete(coordinator.Peers, msg.Who.String())
 		}
 		context.Self().Tell(&message.Ping{})
+		coordinator.Controller.UpdatePings(pings)
 		for _, PID := range coordinator.Peers {
 			actor.NewPID(PID.Address, PID.Id).Request(&message.DeadNode{msg.Who}, context.Self())
 		}
 	}
-
 }
 
 func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what interface{}) interface{} {
@@ -110,15 +105,14 @@ func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what
 	response := make(chan interface{})
 	for _, PID := range who {
 		go func(PID *actor.PID) {
-			res := nil
+			var res interface{}
 			if PID.Address != from.Address {
 				res, _ = actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
 			}
 			response <- res
 		}(PID)
 	}
-	for i := 0; i < len(who); i++ {
-		for _, PID := range who {
+	for range who {
 		val := <-response
 		if val, ok := val.(*message.Response); ok {
 			return val
