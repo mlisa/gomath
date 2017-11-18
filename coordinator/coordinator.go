@@ -110,10 +110,10 @@ func (c *Coordinator) sendToAll(from *actor.PID, who map[string]*actor.PID, what
 	response := make(chan interface{})
 	for _, PID := range who {
 		if PID.Address != from.Address {
-			go func() {
+			go func(PID *actor.PID) {
 				res, _ := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 5*time.Second).Result()
 				response <- res
-			}()
+			}(PID)
 		}
 	}
 	for range who {
