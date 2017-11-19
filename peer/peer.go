@@ -136,27 +136,6 @@ func (peer *Peer) Operative(context actor.Context) {
 	}
 }
 
-/*func (peer *Peer) sendToAll(what interface{}) interface{} {
-	// Channel to stop all goroutines
-	response := make(chan interface{})
-	for _, PID := range peer.otherNodes {
-		go func(PID *actor.PID) {
-			req := actor.NewPID(PID.Address, PID.Id).RequestFuture(what, 2*time.Second)
-			res, _ := req.Result()
-			response <- res
-		}(PID)
-
-	}
-
-	for i := 0; i < len(peer.otherNodes); i++ {
-		val := <-response
-		if response, ok := val.(*message.Response); ok {
-			return response
-		}
-	}
-	return nil
-}*/
-
 func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Available {
 	coordinators, err := common.GetCoordinatorsList() //lettura da file config
 	if err == nil {
