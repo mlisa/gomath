@@ -39,6 +39,7 @@ const (
 	NORESPONSE
 	ASKCOORDINATOR
 	EXTERNALANSWER
+	UNABLETOCONNECT
 )
 
 func (controller *Controller) AskForResult(operation string) {
@@ -140,5 +141,7 @@ func (controller *Controller) Log(eventType EventType, from string) {
 	case ASKCOORDINATOR:
 		controller.setLog("[" + controller.Peer.Id + "] No one has the response, contacting coordinator...")
 
+	case UNABLETOCONNECT:
+		controller.setLog("[" + controller.Peer.Id + "] Unable to connect to GoMath system")
 	}
 }

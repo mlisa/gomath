@@ -166,5 +166,6 @@ func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Availa
 		}
 	}
 	peer.Controller.Connected = false
+	peer.Controller.Log(UNABLETOCONNECT, "")
 	return nil
 }
