@@ -25,10 +25,11 @@ func (peer *Peer) Receive(context actor.Context) {
 	switch msg := context.Message().(type) {
 	case *actor.Started:
 		response := peer.lookForCoordinator(nil)
-
-		peer.coordinator = response.Sender
-		peer.coordinator.Request(&message.Register{peer.computeCapability}, context.Self())
-		context.SetBehavior(peer.Connected)
+		if response != nil {
+			peer.coordinator = response.Sender
+			peer.coordinator.Request(&message.Register{peer.computeCapability}, context.Self())
+			context.SetBehavior(peer.Connected)
+		}
 	case *message.LookForCoordinator:
 		response := peer.lookForCoordinator(nil)
 
@@ -158,5 +159,6 @@ func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Availa
 			return response
 		}
 	}
+	peer.Controller.Connected = false
 	return nil
 }

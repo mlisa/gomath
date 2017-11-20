@@ -26,7 +26,7 @@ func main() {
 	remote.Start(config.Myself.Address)
 
 	g, _ := gocui.NewGui(gocui.Output256)
-	controller := Controller{Gui: g, Cache: &CacheManager{}, Config: config}
+	controller := Controller{Gui: g, Cache: &CacheManager{}, Config: config, Connected: true}
 	defer g.Close()
 
 	props := actor.FromInstance(&Peer{Controller: &controller, computeCapability: config.Myself.ComputationCapability})

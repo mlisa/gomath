@@ -16,10 +16,11 @@ import (
 )
 
 type Controller struct {
-	Gui    *gocui.Gui
-	Peer   *actor.PID
-	Cache  *CacheManager
-	Config common.Config
+	Gui       *gocui.Gui
+	Peer      *actor.PID
+	Cache     *CacheManager
+	Config    common.Config
+	Connected bool
 }
 
 type EventType int
@@ -42,22 +43,25 @@ const (
 
 func (controller *Controller) AskForResult(operation string) {
 	operation = strings.TrimSpace(operation)
-
-	if _, err := parser.Parse("", []byte(operation)); err == nil {
-		if resultInLocalCache := controller.SearchInCache(operation); resultInLocalCache != "" {
-			controller.SetOutput(resultInLocalCache)
-		} else {
-			var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
-				strings.Count(operation, "+") + strings.Count(operation, "-")
-			if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
-				controller.Peer.Tell(&message.AskForResult{operation})
-				controller.Log(ASKFORRESULT, "")
+	if controller.Connected {
+		if _, err := parser.Parse("", []byte(operation)); err == nil {
+			if resultInLocalCache := controller.SearchInCache(operation); resultInLocalCache != "" {
+				controller.SetOutput(resultInLocalCache)
 			} else {
-				controller.ComputeLocal(operation)
+				var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
+					strings.Count(operation, "+") + strings.Count(operation, "-")
+				if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
+					controller.Peer.Tell(&message.AskForResult{operation})
+					controller.Log(ASKFORRESULT, "")
+				} else {
+					controller.ComputeLocal(operation)
+				}
 			}
+		} else {
+			controller.SetOutput("[ERROR] Wrong input format")
 		}
 	} else {
-		controller.SetOutput("[ERROR] Wrong input format")
+		controller.ComputeLocal(operation)
 	}
 
 }
