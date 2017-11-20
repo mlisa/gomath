@@ -64,16 +64,12 @@ func (c *Controller) UpdatePings(pings map[string]common.Pong) {
 	c.Gui.UpdatePings(pings)
 }
 
-func (c *Controller) UpdatePing(peer string, ping int64) {
-	c.Gui.UpdatePing(peer, ping)
-}
-
 func (c *Controller) Log(s string) {
 	c.Gui.PrintToView("log", fmt.Sprintf("[%s] %s", c.CoordinatorPID.Id, s))
 }
 
 func (c *Controller) GetLatency(peer string) int64 {
-	req := c.CoordinatorPID.RequestFuture(&message.GetPing{Peer: peer}, 2*time.Second)
+	req := c.CoordinatorPID.RequestFuture(&message.GetPing{Peer: peer}, 1*time.Second)
 	if r, err := req.Result(); err == nil {
 		return r.(*message.Pong).Pong
 	}

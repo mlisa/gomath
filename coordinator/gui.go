@@ -108,9 +108,6 @@ func (gui *GuiCoordinator) UpdatePings(pings map[string]common.Pong) {
 	})
 }
 
-func (gui *GuiCoordinator) UpdatePing(peer string, ping int64) {
-}
-
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
@@ -153,7 +150,7 @@ func (gui *GuiCoordinator) initKeybindings(g *gocui.Gui) error {
 		return err
 	}
 	// show peer details
-	if err := g.SetKeybinding("peers", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+	if err := g.SetKeybinding("", gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		gui.Controller.RunPing()
 		g.Update(func(g *gocui.Gui) error {
 			vp, _ := g.View("peers")
@@ -240,7 +237,11 @@ func (gui *GuiCoordinator) newView(l string, g *gocui.Gui) error {
 		fmt.Fprintln(view, "Status: OK")
 		fmt.Fprintln(view, "Name: "+strings.Split(l, "/")[1])
 		fmt.Fprintln(view, "Address: "+strings.Split(l, "/")[0])
-		fmt.Fprintln(view, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+		if pong > 0 {
+			fmt.Fprintln(view, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+		} else {
+			fmt.Fprintln(view, "Latency: N/A ms")
+		}
 	}
 	if _, err := g.SetCurrentView(name); err != nil {
 		return err

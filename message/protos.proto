@@ -2,89 +2,95 @@ syntax = "proto3";
 import "github.com/AsynkronIT/protoactor-go/actor/protos.proto";
 package message;
 
-//Message from a new node to every coordinator, to discover if it is avalaible
+// Message from a new node to every coordinator, to discover if it is avalaible
 message Hello {
-	float ComputeCapability = 2;
+	float ComputeCapability = 1;
 }
 
-//Response msg from coordinator to Hello msg
+// Response msg from coordinator to Hello msg
 message Available {
     actor.PID sender = 1;
 }
 
-message NotAvailable {
-}
+// Response from coordinator is no slot
+message NotAvailable { }
 
-//Message in response to peer when someone doesnt have the result in cache
+// Message in response to peer when someone doesnt have the result in cache
 message NotFound {
 	string Operation = 1;
 }
 
-//Message sent from new node to his coordinator after receiving Available msg
+// Message sent from new node to his coordinator after receiving Available msg
 message Register {
 	float computeCapability = 1;
 }
 
 message LookForCoordinator { }
 
-//Message to new node from coordinator containing the peer list
+// Message to new node from coordinator containing the peer list
 message Welcome {
 	map<string, actor.PID>  nodes = 1;
 }
 
-//Message sent to all peers when a new node enter the region
+// Message sent to all peers when a new node enter the region
 message NewNode {
 	actor.PID newnode = 1;	
 }
 
+// Message sent to all peers from coordinator when detects a dead node/peer
 message DeadNode {
 	actor.PID deadNode = 1;
 }
 
-//Message sent by a node to other nodes (also coordinator if necessary)
+// Message sent by a node to other nodes (also coordinator if necessary)
 message RequestForCache {
     string Operation = 1;
 	actor.PID sender = 2;
 }
 
+// Message sent by a coordinator to other coordinators
 message RequestForCacheExternal {
     string Operation = 1;
 	actor.PID sender = 2;
 }
 
-//Response msg for RequestForCache
+// Response msg for RequestForCache/RequestForCacheExternal
 message Response {
     string Result = 1;
 }
 
-//Msg from controller to peer
+// Message from controller to peer
 message AskForResult {
 	string Operation = 1;
 }
 
-//Msg from peer to controller
+// Message from peer to controller
 message SearchInCache {
 	string Operation = 1;
 	actor.PID FromPeer = 2;
 }
 
-//Response msg from a peer to another peer
+// Response msg from a peer to another peer
 message ResponseFromCache {
 	string Result = 1;
 }
 
+// Self-Message when a coordinator goes down
 message LostConnectionCoordinator{
 	actor.PID coordinator = 1;
 }
 
+// Message from coordinator to self or to peer: init ping/pong process
 message Ping {
     int64 Ping = 1;    
 }
 
+// Response from Ping message
 message Pong {
     int64 Pong = 1;
 }
 
+// Message to ask coordinator for a single ping value
 message GetPing {
     string Peer = 1;
 }
