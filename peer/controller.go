@@ -42,18 +42,24 @@ const (
 
 func (controller *Controller) AskForResult(operation string) {
 	operation = strings.TrimSpace(operation)
+
 	if _, err := parser.Parse("", []byte(operation)); err == nil {
-		var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
-			strings.Count(operation, "+") + strings.Count(operation, "-")
-		if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
-			controller.Peer.Tell(&message.AskForResult{operation})
-			controller.Log(ASKFORRESULT, "")
+		if resultInLocalCache := controller.SearchInCache(operation); resultInLocalCache != "" {
+			controller.SetOutput(resultInLocalCache)
 		} else {
-			controller.ComputeLocal(operation)
+			var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
+				strings.Count(operation, "+") + strings.Count(operation, "-")
+			if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
+				controller.Peer.Tell(&message.AskForResult{operation})
+				controller.Log(ASKFORRESULT, "")
+			} else {
+				controller.ComputeLocal(operation)
+			}
 		}
 	} else {
 		controller.SetOutput("[ERROR] Wrong input format")
 	}
+
 }
 
 func (controller *Controller) ComputeLocal(operation string) {
