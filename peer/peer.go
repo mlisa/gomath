@@ -146,17 +146,23 @@ func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Availa
 				go func(PID *actor.PID) {
 					tempCoordinator := actor.NewPID(PID.Address, PID.Id)
 					fut := tempCoordinator.RequestFuture(&message.Hello{}, 3*time.Second)
-					res, err := fut.Result()
-					if err == nil {
-						coordChannel <- res
-					}
+					res, _ := fut.Result()
+					coordChannel <- res
+
 				}(PID)
 			}
 		}
 
-		val := <-coordChannel
-		if response, ok := val.(*message.Available); ok {
-			return response
+		nCoordinators := len(coordinators)
+		if deadCoordinator != nil {
+			nCoordinators = nCoordinators - 1
+		}
+
+		for i := 0; i < nCoordinators; i++ {
+			val := <-coordChannel
+			if response, ok := val.(*message.Available); ok {
+				return response
+			}
 		}
 	}
 	peer.Controller.Connected = false
