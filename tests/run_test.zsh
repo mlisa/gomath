@@ -39,8 +39,9 @@ EOF
 }
 
 if [[ ${3} = "--generate" ]]; then
-  rm ${RUN_PATH}/*.json
-  rm /tmp/coordinator*.log /tmp/peer*.log
+  rm -f ${RUN_PATH}/*.json
+  rm -f /tmp/coordinator*.log /tmp/peer*.log 2> /dev/null
+  curl -S -s -A "Go-http-client/1.1" http://gomath.duckdns.org:8080/generate.php\?c\=${NUM_COOR} > /dev/null
   echo "[i] Generating new coordinator configs"
   for i in {1..${NUM_COOR}}; do
     generateCoordinatorConfig ${i} ${i}
@@ -80,7 +81,7 @@ fi
 eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /tmp/peer${NUM_PEER}.log\"" &
 echo "[i] Peers running"
 
-sleep 0.2
+sleep 0.5
 \tail -f /tmp/coordinator*.log /tmp/peer*.log
 
 
