@@ -37,9 +37,9 @@ import actor "github.com/AsynkronIT/protoactor-go/actor"
 
 import strings "strings"
 import reflect "reflect"
-import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+import sortkeys "github.com/gogo/protobuf/sortkeys"
 
-import encoding_binary "encoding/binary"
+import binary "encoding/binary"
 
 import io "io"
 
@@ -1034,7 +1034,7 @@ func (this *Welcome) GoString() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%#v: %#v,", k, this.Nodes[k])
@@ -1207,7 +1207,7 @@ func (m *Hello) MarshalTo(dAtA []byte) (int, error) {
 	if m.ComputeCapability != 0 {
 		dAtA[i] = 0xd
 		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputeCapability))))
+		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputeCapability))))
 		i += 4
 	}
 	return i, nil
@@ -1301,7 +1301,7 @@ func (m *Register) MarshalTo(dAtA []byte) (int, error) {
 	if m.ComputeCapability != 0 {
 		dAtA[i] = 0xd
 		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputeCapability))))
+		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.ComputeCapability))))
 		i += 4
 	}
 	return i, nil
@@ -1986,7 +1986,7 @@ func (this *Welcome) String() string {
 	for k, _ := range this.Nodes {
 		keysForNodes = append(keysForNodes, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	sortkeys.Strings(keysForNodes)
 	mapStringForNodes := "map[string]*actor.PID{"
 	for _, k := range keysForNodes {
 		mapStringForNodes += fmt.Sprintf("%v: %v,", k, this.Nodes[k])
@@ -2166,7 +2166,7 @@ func (m *Hello) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.ComputeCapability = float32(math.Float32frombits(v))
 		default:
@@ -2439,7 +2439,7 @@ func (m *Register) Unmarshal(dAtA []byte) error {
 			if (iNdEx + 4) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			v = uint32(binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.ComputeCapability = float32(math.Float32frombits(v))
 		default:
