@@ -65,7 +65,10 @@ func (coordinator *Coordinator) Receive(context actor.Context) {
 		ping := pings[context.Sender().String()]
 		if !ping.Complete {
 			pong := time.Now().UnixNano() / 1000000
-			pings[context.Sender().String()] = common.Pong{pong - ping.Value, true}
+			peer := context.Sender()
+			latency := pong - ping.Value
+			pings[peer.String()] = common.Pong{latency, true}
+			peer.Tell(&message.Pong{Pong: latency})
 		}
 		coordinator.Controller.UpdatePings(pings)
 	case *message.Ping:
