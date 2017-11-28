@@ -14,9 +14,9 @@ import (
 )
 
 type Node struct {
-	Id                string
-	Address           string
-	ComputeCapability int64
+	Id                string `json:id`
+	Address           string `json:address`
+	ComputeCapability int64  `json:computecapability,omitempty`
 }
 
 type Config struct {
