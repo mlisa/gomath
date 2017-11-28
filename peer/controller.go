@@ -49,6 +49,7 @@ func (controller *Controller) AskForResult(operation string) {
 		if _, err := parser.Parse("", []byte(operation)); err == nil {
 			if resultInLocalCache := controller.SearchInCache(operation); resultInLocalCache != "" {
 				controller.SetOutput(resultInLocalCache)
+				controller.Log(OFFLINECOMPUTATION, "")
 			} else {
 				var complexity = int64(strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
 					strings.Count(operation, "+") + strings.Count(operation, "-"))
