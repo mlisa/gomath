@@ -14,9 +14,9 @@ import (
 )
 
 type Node struct {
-	Id                    string
-	Address               string
-	ComputationCapability float32
+	Id                string
+	Address           string
+	ComputeCapability int64
 }
 
 type Config struct {

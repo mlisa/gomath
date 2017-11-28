@@ -49,9 +49,10 @@ func (controller *Controller) AskForResult(operation string) {
 			if resultInLocalCache := controller.SearchInCache(operation); resultInLocalCache != "" {
 				controller.SetOutput(resultInLocalCache)
 			} else {
-				var complexity = strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
-					strings.Count(operation, "+") + strings.Count(operation, "-")
-				if float32(complexity*100) > controller.Config.Myself.ComputationCapability {
+				var complexity = int64(strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
+					strings.Count(operation, "+") + strings.Count(operation, "-"))
+
+				if complexity*100 > controller.Config.Myself.ComputeCapability {
 					controller.Peer.Tell(&message.AskForResult{operation})
 					controller.Log(ASKFORRESULT, "")
 				} else {

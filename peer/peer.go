@@ -18,7 +18,7 @@ type Peer struct {
 	otherNodes        map[string]*actor.PID
 	coordinator       *actor.PID
 	Controller        *Controller
-	computeCapability float32
+	computeCapability int64
 }
 
 func (peer *Peer) Receive(context actor.Context) {
