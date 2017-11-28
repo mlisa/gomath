@@ -61,6 +61,9 @@ func (peer *Peer) Connected(context actor.Context) {
 		time.Sleep(time.Millisecond * time.Duration(r))
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
 
+	case *message.Pong:
+		peer.Controller.Latency = msg.Pong
+
 	case *message.Welcome:
 		peer.Controller.Log(FOUNDNEWCOORDINATOR, peer.coordinator.String())
 		context.Watch(peer.coordinator)
@@ -85,6 +88,9 @@ func (peer *Peer) Operative(context actor.Context) {
 		r := rand.Intn(500)
 		time.Sleep(time.Millisecond * time.Duration(r))
 		peer.coordinator.Request(&message.Pong{time.Now().UnixNano() / 1000000}, context.Self())
+
+	case *message.Pong:
+		peer.Controller.Latency = msg.Pong
 
 	case *actor.Terminated:
 		peer.Controller.Log(LOSTCONNECTION, msg.Who.String())

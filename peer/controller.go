@@ -21,6 +21,7 @@ type Controller struct {
 	Cache     *CacheManager
 	Config    common.Config
 	Connected bool
+	Latency   int64
 }
 
 type EventType int
@@ -52,7 +53,7 @@ func (controller *Controller) AskForResult(operation string) {
 				var complexity = int64(strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
 					strings.Count(operation, "+") + strings.Count(operation, "-"))
 
-				if complexity*100 > controller.Config.ComputeCapability {
+				if complexity*100 > controller.Config.ComputeCapability || controller.Latency > 450 {
 					controller.Peer.Tell(&message.AskForResult{operation})
 					controller.Log(ASKFORRESULT, "")
 				} else {
