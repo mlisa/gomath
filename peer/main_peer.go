@@ -23,14 +23,14 @@ func main() {
 	if err != nil {
 		kingpin.FatalUsage("Wrong usage, please see the help")
 	}
-	remote.Start(config.Myself.Address)
+	remote.Start(config.Address)
 
 	g, _ := gocui.NewGui(gocui.Output256)
 	controller := Controller{Gui: g, Cache: &CacheManager{}, Config: config, Connected: true}
 	defer g.Close()
 
-	props := actor.FromInstance(&Peer{Controller: &controller, computeCapability: config.Myself.ComputeCapability})
-	peer, err := actor.SpawnNamed(props, config.Myself.Id)
+	props := actor.FromInstance(&Peer{Controller: &controller, computeCapability: config.ComputeCapability})
+	peer, err := actor.SpawnNamed(props, config.Id)
 	if err != nil {
 		println("[PEER] Name already in use")
 	}

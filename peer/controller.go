@@ -52,7 +52,7 @@ func (controller *Controller) AskForResult(operation string) {
 				var complexity = int64(strings.Count(operation, "*")*2 + strings.Count(operation, "/")*2 +
 					strings.Count(operation, "+") + strings.Count(operation, "-"))
 
-				if complexity*100 > controller.Config.Myself.ComputeCapability {
+				if complexity*100 > controller.Config.ComputeCapability {
 					controller.Peer.Tell(&message.AskForResult{operation})
 					controller.Log(ASKFORRESULT, "")
 				} else {

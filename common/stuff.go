@@ -13,15 +13,10 @@ import (
 	"github.com/mlisa/gomath/message"
 )
 
-type Node struct {
+type Config struct {
 	Id                string `json:id`
 	Address           string `json:address`
 	ComputeCapability int64  `json:computecapability,omitempty`
-}
-
-type Config struct {
-	Myself       Node
-	Coordinators []*actor.PID
 }
 
 type jsonParse struct {

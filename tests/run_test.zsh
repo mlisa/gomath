@@ -17,10 +17,8 @@ function generateCoordinatorConfig {
   local port=$(( 8000 + ${2} ))
 cat << EOF > config_coordinator${1}.json
 {
-  "myself" : {
-          "id" : "coordinator${1}",
-          "address" : "127.0.0.1:${port}"
-  }
+    "id" : "coordinator${1}",
+    "address" : "127.0.0.1:${port}"
 }
 EOF
 }
@@ -29,11 +27,9 @@ function generatePeerConfig {
   local port=$(( 8100 + ${2} ))
 cat << EOF > config_peer${1}.json
 {
-  "myself" : {
-          "id" : "peer${1}",
-          "address" : "127.0.0.1:${port}",
-          "computecapability" : 50
-  }
+    "id" : "peer${1}",
+    "address" : "127.0.0.1:${port}",
+    "computecapability" : 50
 }
 EOF
 }

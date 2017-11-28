@@ -40,14 +40,14 @@ func (c *Controller) PublishCoordinator(token string) {
 }
 
 func (c *Controller) StartCoordinator(config common.Config) error {
-	remote.Start(config.Myself.Address)
+	remote.Start(config.Address)
 	list, err := common.GetCoordinatorsList()
 	if err != nil {
 		return err
 	}
 	c.Coordinator = &Coordinator{MaxPeers: *maxpeer, Peers: make(map[string]*actor.PID), Coordinators: list, Controller: c}
 	props := actor.FromInstance(c.Coordinator)
-	c.CoordinatorPID, err = actor.SpawnNamed(props, config.Myself.Id)
+	c.CoordinatorPID, err = actor.SpawnNamed(props, config.Id)
 	if err != nil {
 		return err
 	}

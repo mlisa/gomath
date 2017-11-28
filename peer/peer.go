@@ -138,7 +138,7 @@ func (peer *Peer) Operative(context actor.Context) {
 }
 
 func (peer *Peer) lookForCoordinator(deadCoordinator *actor.PID) *message.Available {
-	coordinators, err := common.GetCoordinatorsList() //lettura da file config
+	coordinators, err := common.GetCoordinatorsList()
 	if err == nil {
 		coordChannel := make(chan interface{})
 		for _, PID := range coordinators {
