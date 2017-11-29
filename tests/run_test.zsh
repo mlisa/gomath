@@ -15,7 +15,7 @@ fi
 
 function generateCoordinatorConfig {
   local port=$(( 8000 + ${2} ))
-cat << EOF > config_coordinator${1}.json
+cat << EOF > ${GOMATH}/tests/config_coordinator${1}.json
 {
     "id" : "coordinator${1}",
     "address" : "127.0.0.1:${port}"
@@ -25,7 +25,7 @@ EOF
 
 function generatePeerConfig {
   local port=$(( 8100 + ${2} ))
-cat << EOF > config_peer${1}.json
+cat << EOF > ${GOMATH}/tests/config_peer${1}.json
 {
     "id" : "peer${1}",
     "address" : "127.0.0.1:${port}",
@@ -60,21 +60,21 @@ cd ${GOMATH}/coordinator/ && \
 
 if [[ ${NUM_COOR} -gt 1 ]]; then
   for i in {1..$(( ${NUM_COOR}-1 ))}; do
-    eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${i}.json >& /tmp/coordinator${i}.log\"" &
+    eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${GOMATH}/tests/config_coordinator${i}.json >& /tmp/coordinator${i}.log\"" &
     sleep 0.2
   done
 fi
-eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${RUN_PATH}/config_coordinator${NUM_COOR}.json >& /tmp/coordinator${NUM_COOR}.log\"" &
+eval "${TERMINAL} \"${GOPATH}/bin/coordinator -c ${GOMATH}/tests/config_coordinator${NUM_COOR}.json >& /tmp/coordinator${NUM_COOR}.log\"" &
 sleep 0.2
 echo "[i] Coordinators running"
 
 if [[ ${NUM_PEER} -gt 1 ]]; then
   for i in {1..$(( ${NUM_PEER}-1 ))}; do
-    eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${i}.json >& /tmp/peer${i}.log\"" &
+    eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${GOMATH}/tests/config_peer${i}.json >& /tmp/peer${i}.log\"" &
     sleep 0.2
   done
 fi
-eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${RUN_PATH}/config_peer${NUM_PEER}.json >& /tmp/peer${NUM_PEER}.log\"" &
+eval "${TERMINAL} \"${GOPATH}/bin/peer -c ${GOMATH}/tests/config_peer${NUM_PEER}.json >& /tmp/peer${NUM_PEER}.log\"" &
 echo "[i] Peers running"
 
 sleep 0.5
