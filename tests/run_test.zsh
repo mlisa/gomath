@@ -2,7 +2,6 @@
 #
 #
 
-local RUN_PATH=$(dirname $0:A)
 local GOMATH="${GOPATH}/src/github.com/mlisa/gomath"
 local NUM_COOR=${1}
 local NUM_PEER=${2}
@@ -35,7 +34,7 @@ EOF
 }
 
 if [[ ${3} = "--generate" ]]; then
-  rm -f ${RUN_PATH}/*.json
+  rm -f ${GOMATH}/tests/*.json
   rm -f /tmp/coordinator*.log /tmp/peer*.log 2> /dev/null
   curl -S -s -A "Go-http-client/1.1" http://gomath.duckdns.org:8080/generate.php\?c\=${NUM_COOR} > /dev/null
   echo "[i] Generating new coordinator configs"
