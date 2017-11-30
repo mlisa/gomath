@@ -18,6 +18,8 @@ To compile a module run `go run *.go` inside the folder.
 
 `gocui`
 
+`kingpin`
+
 `go-cache`
 
 `pigeon`
@@ -89,6 +91,16 @@ https://github.com/jroimartin/gocui
 ### Installation
 
 `go get github.com/jroimartin/gocui`
+
+## kingpin
+
+### Link
+
+https://github.com/alecthomas/kingpin
+
+### Installation
+
+`go get gopkg.in/alecthomas/kingpin.v2`
 
 ## go-cache
 
