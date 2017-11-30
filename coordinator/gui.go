@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -89,19 +90,16 @@ func (gui *GuiCoordinator) UpdatePings(pings map[string]common.Pong) {
 		}
 		if v, e := gui.mainGui.View("peer"); e == nil {
 			buf := v.Buffer()
-			infos := strings.Split(buf, "\n")
-			name := strings.Split(infos[1], " ")[1]
-			address := strings.Split(infos[2], " ")[1]
-			latency := strings.Split(infos[3], " ")[1]
-			v.Clear()
-			pong := pings[address+"/"+name]
-			fmt.Fprintln(v, "Status: OK")
-			fmt.Fprintln(v, "Name: "+name)
-			fmt.Fprintln(v, "Address: "+address)
-			if pong.Complete {
-				fmt.Fprintln(v, "Latency: "+strconv.FormatInt(pong.Value, 10)+" ms")
-			} else {
-				fmt.Fprintln(v, "Latency: "+latency+" ms")
+			re := regexp.MustCompile(`Name: (\w+)`)
+			name := re.FindStringSubmatch(buf)[1]
+			re = regexp.MustCompile(`Address: (\d{0,3}.+:\d+)`)
+			address := re.FindStringSubmatch(buf)[1]
+			ping := pings[address+"/"+name]
+			if ping.Complete {
+				v.Clear()
+				re = regexp.MustCompile(`Latency: (\d+|N/A) ms`)
+				subs := fmt.Sprintf("Latency: %d ms", ping.Value)
+				fmt.Fprintln(v, re.ReplaceAllString(buf, subs))
 			}
 		}
 		return nil
@@ -232,13 +230,13 @@ func (gui *GuiCoordinator) newView(l string, g *gocui.Gui) error {
 			return err
 		}
 		l = strings.Split(l, " ")[0]
-		pong := gui.Controller.GetLatency(l)
+		ping := gui.Controller.GetLatency(l)
 		view.Title = "Peer Details"
 		fmt.Fprintln(view, "Status: OK")
 		fmt.Fprintln(view, "Name: "+strings.Split(l, "/")[1])
 		fmt.Fprintln(view, "Address: "+strings.Split(l, "/")[0])
-		if pong > 0 {
-			fmt.Fprintln(view, "Latency: "+strconv.FormatInt(pong, 10)+" ms")
+		if ping > 0 {
+			fmt.Fprintln(view, "Latency: "+strconv.FormatInt(ping, 10)+" ms")
 		} else {
 			fmt.Fprintln(view, "Latency: N/A ms")
 		}
